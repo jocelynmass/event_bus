@@ -48,6 +48,8 @@ static void event_worker_thread(void *arg)
     }
 
     worker->thread_hdl = NULL;
+
+    memset(worker->name, 0, sizeof(char) * EVT_WORKER_MAX_NAME_LEN);
     vTaskDelete(NULL);
 }
 
@@ -75,12 +77,15 @@ int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg,
         if(worker->thread_hdl == NULL)
         {
             worker->msg.bus = bus;
+            sprintf(worker->name, "worker_%d_th", i);
             memcpy(&worker->msg.data, msg, sizeof(struct event_bus_msg));
 
-            if(xTaskCreate(event_worker_thread, "evt_worker_th", EVT_WORKER_STACK_SIZE, (void *)worker, EVT_WORKER_PRIO, &worker->thread_hdl) != pdPASS)
+            if(xTaskCreate(event_worker_thread, worker->name, EVT_WORKER_STACK_SIZE, (void *)worker, EVT_WORKER_PRIO, &worker->thread_hdl) != pdPASS)
             {
                 return -1;
             }  
+
+            return 0;
         }
     }
 
