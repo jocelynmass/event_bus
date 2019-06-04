@@ -1,5 +1,8 @@
 /*
- * Copyright (c) 2017-2019 Jocelyn Masserot.  All rights reserved.
+/*
+ * MIT License
+ *
+ * Copyright (c) 2019 Jocelyn Masserot
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -8,8 +11,8 @@
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- *  1. Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimers.
+ *  1. The above copyright notice and this permission notice shall be included in all
+ *     copies or substantial portions of the Software.
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimers in the
  *     documentation and/or other materials provided with the distribution.
@@ -47,7 +50,7 @@
 #endif
 
 #ifndef EVT_BUS_STACK_SIZE
-#define EVT_BUS_STACK_SIZE          (configMINIMAL_STACK_SIZE)
+#define EVT_BUS_STACK_SIZE          (configMINIMAL_STACK_SIZE * 4)
 #endif
 
 #ifndef EVT_BUS_PRIO
@@ -55,11 +58,15 @@
 #endif
 
 #ifndef EVT_WORKER_STACK_SIZE
-#define EVT_WORKER_STACK_SIZE       (configMINIMAL_STACK_SIZE)
+#define EVT_WORKER_STACK_SIZE       (configMINIMAL_STACK_SIZE * 4)
 #endif
 
 #ifndef EVT_WORKER_PRIO
 #define EVT_WORKER_PRIO             (tskIDLE_PRIORITY + 1)
+#endif
+
+#ifndef EVT_WORKER_MAX_NAME_LEN
+#define EVT_WORKER_MAX_NAME_LEN     (16)
 #endif
 
 #endif // __EVENT_BUS_DFLT_CFG_H__
