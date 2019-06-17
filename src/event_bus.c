@@ -49,11 +49,12 @@ static void event_bus_thread(void *arg)
     } while (1);
 }
 
-int32_t event_bus_init(struct event_bus_ctx *bus)
+int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 {
     uint32_t i;
 
     bus->sub_nb = 0;
+    bus->app_ctx = app_ctx;
 
     for(i = 0 ; i < MAX_NB_SUBSCRIBERS ; i++)
     {
@@ -92,12 +93,12 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, int32_
     return EVT_BUS_ERR_OK;
 }
 
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *app_ctx, void *arg, bool is_isr)
+int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *arg, bool is_isr)
 {
     struct event_bus_msg msg;
 
     msg.event_id = event_id;
-    msg.app_ctx = app_ctx;
+    msg.app_ctx = bus->app_ctx;
     msg.arg = arg;
 
     if(is_isr)
