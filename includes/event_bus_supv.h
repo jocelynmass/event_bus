@@ -28,28 +28,13 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EVENT_WORKER_H__
-#define __EVENT_WORKER_H__
+#ifndef __EVENT_SUPERVISOR_H__
+#define __EVENT_SUPERVISOR_H__
 
 #include "event_bus.h"
+#include "event_bus_worker.h"
 
-struct event_bus_worker_msg
-{
-    struct event_bus_ctx *bus;
-    struct event_bus_msg data;
-};
+int32_t event_supv_start(struct event_bus_worker *worker, void (* timeout_cb)(TimerHandle_t xTimer));
+int32_t event_supv_stop(struct event_bus_worker *worker);
 
-struct event_bus_worker
-{
-    const char name[EVT_WORKER_MAX_NAME_LEN];
-    TaskHandle_t thread_hdl;
-    TimerHandle_t tmr_hdl;
-    struct event_bus_worker_msg msg;
-    uint8_t offset;
-    bool canceled;
-};
-
-int32_t event_worker_init(struct event_bus_ctx *bus);
-int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg, uint8_t offset, bool wait);
-
-#endif
+#endif // __EVENT_SUPERVISOR_H__

@@ -41,7 +41,7 @@ static void event_bus_thread(void *arg)
     {
         if(xQueueReceive(bus->queue, &msg, portMAX_DELAY))
         {
-            if(event_worker_start(bus, &msg, false))
+            if(event_worker_start(bus, &msg, 0, false))
             {
                 printf("[EVENT_BUS]: worker start faield\n");
             }

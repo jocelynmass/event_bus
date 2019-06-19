@@ -1,5 +1,4 @@
 /*
-/*
  * MIT License
  *
  * Copyright (c) 2019 Jocelyn Masserot
@@ -67,6 +66,14 @@
 
 #ifndef EVT_WORKER_MAX_NAME_LEN
 #define EVT_WORKER_MAX_NAME_LEN     (16)
+#endif
+
+#ifndef EVT_SUPV_MAX_TIMER
+#define EVT_SUPV_MAX_TIMER          (4)
+#endif
+
+#ifndef EVT_MAX_SUB_LATENCY_MS
+#define EVT_MAX_SUB_LATENCY_MS      (100)
 #endif
 
 #endif // __EVENT_BUS_DFLT_CFG_H__

@@ -28,28 +28,28 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EVENT_WORKER_H__
-#define __EVENT_WORKER_H__
+#include "event_bus_supv.h"
+#include "event_bus_worker.h"
 
-#include "event_bus.h"
 
-struct event_bus_worker_msg
+int32_t event_supv_start(struct event_bus_worker *worker, void (* timeout_cb)(TimerHandle_t xTimer))
 {
-    struct event_bus_ctx *bus;
-    struct event_bus_msg data;
-};
+    if(worker->tmr_hdl != NULL)
+        return -1;
 
-struct event_bus_worker
+    worker->tmr_hdl = xTimerCreate("evt_supv_tmr", EVT_MAX_SUB_LATENCY_MS, pdFALSE, (void *)worker, timeout_cb);
+
+    if(worker->tmr_hdl == NULL)
+        return -1;
+
+    xTimerStart(worker->tmr_hdl, 0);
+
+    return 0;
+}
+
+int32_t event_supv_stop(struct event_bus_worker *worker)
 {
-    const char name[EVT_WORKER_MAX_NAME_LEN];
-    TaskHandle_t thread_hdl;
-    TimerHandle_t tmr_hdl;
-    struct event_bus_worker_msg msg;
-    uint8_t offset;
-    bool canceled;
-};
-
-int32_t event_worker_init(struct event_bus_ctx *bus);
-int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg, uint8_t offset, bool wait);
-
-#endif
+    xTimerStop(worker->tmr_hdl, 0);
+	xTimerDelete(worker->tmr_hdl, 0);
+    worker->tmr_hdl = NULL;
+}
