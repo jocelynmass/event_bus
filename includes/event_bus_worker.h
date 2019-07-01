@@ -41,7 +41,7 @@ struct event_bus_worker_msg
 
 struct event_bus_worker
 {
-    const char name[EVT_WORKER_MAX_NAME_LEN];
+    char name[EVT_WORKER_MAX_NAME_LEN];
     TaskHandle_t thread_hdl;
     TimerHandle_t tmr_hdl;
     struct event_bus_worker_msg msg;

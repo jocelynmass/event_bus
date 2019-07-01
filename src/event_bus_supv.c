@@ -52,4 +52,6 @@ int32_t event_supv_stop(struct event_bus_worker *worker)
     xTimerStop(worker->tmr_hdl, 0);
 	xTimerDelete(worker->tmr_hdl, 0);
     worker->tmr_hdl = NULL;
+
+    return 0;
 }

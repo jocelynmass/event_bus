@@ -29,6 +29,7 @@
  */
 
 #include "event_bus_worker.h"
+#include "event_bus_supv.h"
 
 static struct event_bus_worker workers[MAX_NB_WORKERS];
 
@@ -118,7 +119,7 @@ int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg,
             worker->msg.bus = bus;
             worker->offset = offset;
             worker->canceled = false;
-            sprintf(worker->name, "worker_%d_th", i);
+            sprintf(worker->name, "worker_%ld_th", i);
             memcpy(&worker->msg.data, msg, sizeof(struct event_bus_msg));
 
             if(xTaskCreate(event_worker_thread, worker->name, EVT_WORKER_STACK_SIZE, (void *)worker, EVT_WORKER_PRIO, &worker->thread_hdl) != pdPASS)
