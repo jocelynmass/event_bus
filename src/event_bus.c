@@ -77,7 +77,7 @@ int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
     return 0;
 }
 
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, int32_t (*sub_cb)(void *app_ctx, void *arg))
+int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
 {
     struct event_bus_sub *sub;
     
@@ -87,19 +87,20 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, int32_
     sub = &bus->subscribers[bus->sub_nb];
     sub->event_id = event_id;
     sub->cb = sub_cb;
+    sub->arg = arg;
 
     bus->sub_nb++;
 
     return EVT_BUS_ERR_OK;
 }
 
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *arg, bool is_isr)
+int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *data, bool is_isr)
 {
     struct event_bus_msg msg;
 
     msg.event_id = event_id;
     msg.app_ctx = bus->app_ctx;
-    msg.arg = arg;
+    msg.data = data;
 
     if(is_isr)
     {

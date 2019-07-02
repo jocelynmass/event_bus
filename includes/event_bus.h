@@ -46,13 +46,14 @@ struct event_bus_msg
 {
     uint32_t event_id;
     void *app_ctx;
-    void *arg;
+    void *data;
 };
 
 struct event_bus_sub
 {
     uint32_t event_id;
-    int32_t (*cb)(void *app_ctx, void *arg);
+    void *arg;
+    int32_t (*cb)(void *app_ctx, void *data, void *arg);
 };
 
 struct event_bus_ctx
@@ -64,10 +65,10 @@ struct event_bus_ctx
 };
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, int32_t (*sub_cb)(void *app_ctx, void *arg));
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *arg, bool is_isr);
+int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
+int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *data, bool is_isr);
 
-#define event_bus_publish(ctx, event_id, arg)  event_bus_publish_generic(ctx, event_id, arg, false)
-#define event_bus_publish_from_isr(ctx, event_id, arg)  event_bus_publish_generic(ctx, event_id, arg, true)
+#define event_bus_publish(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, false)
+#define event_bus_publish_from_isr(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, true)
 
 #endif // __EVENT_BUS_H__

@@ -60,6 +60,7 @@ static void event_worker_thread(void *arg)
     struct event_bus_worker *worker = (struct event_bus_worker *)arg;
     struct event_bus_ctx *bus = worker->msg.bus;
     struct event_bus_msg *msg = &worker->msg.data;
+    void *usr_arg;
     uint32_t i;
 
 
@@ -74,7 +75,8 @@ static void event_worker_thread(void *arg)
             if(event_supv_start(worker, event_worker_timeout))
                 printf("[EVENT_BUS]: supervisor failed to start, no exec optimization available\n");
 
-            bus->subscribers[i].cb(msg->app_ctx, msg->arg);
+            usr_arg = bus->subscribers[i].arg;
+            bus->subscribers[i].cb(msg->app_ctx, msg->data, usr_arg);
 
             event_supv_stop(worker);
 
