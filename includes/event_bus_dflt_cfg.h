@@ -35,6 +35,7 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "event_bus_cfg.h"
 
 #ifndef MAX_NB_SUBSCRIBERS
 #define MAX_NB_SUBSCRIBERS          16
