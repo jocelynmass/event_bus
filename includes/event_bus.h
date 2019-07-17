@@ -42,6 +42,10 @@
 #include "event_bus_dflt_cfg.h"
 #include "event_bus_err.h"
 
+// Version 1.1
+#define EVENT_BUS_MAJOR_REV     1
+#define EVENT_BUS_MINOT_REV     1
+
 struct event_bus_msg
 {
     uint32_t event_id;
