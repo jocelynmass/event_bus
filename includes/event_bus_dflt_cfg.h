@@ -77,4 +77,12 @@
 #define EVT_MAX_SUB_LATENCY_MS      (100)
 #endif
 
+#ifndef EVT_SUB_NAME_MAX_LEN
+#define EVT_SUB_NAME_MAX_LEN        (16)
+#endif
+
+#ifndef EVT_STAT_HIST_DEPTH
+#define EVT_STAT_HIST_DEPTH         (4)
+#endif
+
 #endif // __EVENT_BUS_DFLT_CFG_H__

@@ -61,7 +61,7 @@ static void event_worker_thread(void *arg)
     struct event_bus_ctx *bus = worker->msg.bus;
     struct event_bus_msg *msg = &worker->msg.data;
     void *usr_arg;
-    uint32_t i;
+    uint32_t i, latency = 0;
 
 
     for(i = worker->offset ; i < MAX_NB_SUBSCRIBERS ; i++)
@@ -76,7 +76,11 @@ static void event_worker_thread(void *arg)
                 printf("[EVENT_BUS]: supervisor failed to start, no exec optimization available\n");
 
             usr_arg = bus->subscribers[i].arg;
+            latency = xTaskGetTickCount();
             bus->subscribers[i].cb(msg->app_ctx, msg->data, usr_arg);
+            latency = xTaskGetTickCount() - latency;
+            
+            event_bus_stats_add(bus, bus->subscribers[i].name, msg->event_id, latency);
 
             event_supv_stop(worker);
 

@@ -77,7 +77,7 @@ int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
     return 0;
 }
 
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
+int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
 {
     struct event_bus_sub *sub;
     
@@ -88,6 +88,13 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, uint32_t event_id, void *
     sub->event_id = event_id;
     sub->cb = sub_cb;
     sub->arg = arg;
+
+    memset(sub->name, 0, EVT_SUB_NAME_MAX_LEN);
+
+    if(strlen(name) > EVT_SUB_NAME_MAX_LEN)
+        strncpy(sub->name, name, EVT_SUB_NAME_MAX_LEN-1);
+    else
+        strcpy(sub->name, name);
 
     bus->sub_nb++;
 
@@ -114,3 +121,4 @@ int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, 
 
     return 0;
 }
+

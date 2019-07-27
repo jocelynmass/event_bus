@@ -28,52 +28,29 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EVENT_BUS_H__
-#define __EVENT_BUS_H__
+#ifndef __EVENT_BUS_STATS_H__
+#define __EVENT_BUS_STATS_H__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h> 
-#include <string.h> 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "timers.h"
-#include "event_bus_dflt_cfg.h"
-#include "event_bus_err.h"
+#include "event_bus.h"
 
-// Version 1.1
-#define EVENT_BUS_MAJOR_REV     1
-#define EVENT_BUS_MINOR_REV     1
-
-struct event_bus_msg
+struct event_bus_hist
 {
+    const char name[EVT_SUB_NAME_MAX_LEN];;
     uint32_t event_id;
-    void *app_ctx;
-    void *data;
+    uint32_t lat;
 };
 
-struct event_bus_sub
+struct event_bus_stats
 {
-    char name[EVT_SUB_NAME_MAX_LEN];
-    uint32_t event_id;
-    void *arg;
-    int32_t (*cb)(void *app_ctx, void *data, void *arg);
+    uint32_t lat_min;
+    uint32_t lat_avg;
+    uint32_t lat_max;
+    uint32_t index;
+    const char *lat_max_name;
 };
 
-struct event_bus_ctx
-{
-    uint32_t sub_nb;
-    QueueHandle_t queue;
-    struct event_bus_sub subscribers[MAX_NB_SUBSCRIBERS];
-    void *app_ctx;
-};
+int32_t event_bus_stats_init(struct event_bus_ctx *bus);
+int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency);
+void event_bus_stats_print(void);
 
-int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *data, bool is_isr);
-
-#define event_bus_publish(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, false)
-#define event_bus_publish_from_isr(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, true)
-
-#endif // __EVENT_BUS_H__
+#endif // __EVENT_BUS_STATS_H__
