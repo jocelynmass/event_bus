@@ -42,8 +42,8 @@ static void event_worker_timeout(TimerHandle_t xTimer)
     struct event_bus_ctx *bus; 
     struct event_bus_msg *msg; 
 
-    printf("[EVENT_BUS]: worker timeout, defer job to a new worker\n");
     worker = (struct event_bus_worker *)pvTimerGetTimerID(xTimer);
+    worker->offset++;
     // pvTimerGetTimerID return a pointer on the current running worker
     // This worker is taking to much time to proceed so we start a new worker
     // We need to ensure the current worker won't call the subscribers again when
