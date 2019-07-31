@@ -35,7 +35,7 @@
 
 struct event_bus_hist
 {
-    const char name[EVT_SUB_NAME_MAX_LEN];;
+    const char name[EVT_SUB_NAME_MAX_LEN];
     uint32_t event_id;
     uint32_t lat;
 };
@@ -46,7 +46,7 @@ struct event_bus_stats
     uint32_t lat_avg;
     uint32_t lat_max;
     uint32_t index;
-    const char *lat_max_name;
+    const char lat_max_name[EVT_SUB_NAME_MAX_LEN];
 };
 
 int32_t event_bus_stats_init(struct event_bus_ctx *bus);

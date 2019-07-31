@@ -52,14 +52,16 @@ int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_
         stats.lat_min = latency;
         stats.lat_avg = latency;
         stats.lat_max = latency;
-        strcpy(stats.lat_max_name, name);
     }else
     {
         if(latency < stats.lat_min)
             stats.lat_min = latency;
 
         if(latency > stats.lat_max)
+        {
             stats.lat_max = latency;
+            strcpy(stats.lat_max_name, name);
+        }
 
         stats.lat_avg = (stats.lat_avg + latency)/2;
     }
@@ -82,6 +84,7 @@ void event_bus_stats_print(void)
     printf("\t - latency min = %d ms\n", stats.lat_min);
     printf("\t - latency max = %d ms\n", stats.lat_max);
 	printf("\t - average latency = %d ms\n", stats.lat_avg);
+    printf("\t - max latency subscriber = %s\n", stats.lat_max_name);
     printf("\t - last events stats:\n");
 
     for(i = 0 ; i < EVT_STAT_HIST_DEPTH ; i++)
