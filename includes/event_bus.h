@@ -64,16 +64,12 @@ struct event_bus_sub
 struct event_bus_ctx
 {
     uint32_t sub_nb;
-    QueueHandle_t queue;
     struct event_bus_sub subscribers[MAX_NB_SUBSCRIBERS];
     void *app_ctx;
 };
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
 int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *data, bool is_isr);
-
-#define event_bus_publish(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, false)
-#define event_bus_publish_from_isr(ctx, event_id, data)  event_bus_publish_generic(ctx, event_id, data, true)
+int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data);
 
 #endif // __EVENT_BUS_H__

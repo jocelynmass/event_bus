@@ -32,22 +32,6 @@
 #include "event_bus.h"
 #include "event_bus_worker.h"
 
-static void event_bus_thread(void *arg)
-{
-    struct event_bus_ctx *bus = (struct event_bus_ctx *)arg;
-    struct event_bus_msg msg;
-
-    do
-    {
-        if(xQueueReceive(bus->queue, &msg, portMAX_DELAY))
-        {
-            if(event_worker_start(bus, &msg, 0, false))
-            {
-                printf("[EVENT_BUS]: worker start faield\n");
-            }
-        }
-    } while (1);
-}
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 {
@@ -63,16 +47,6 @@ int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 
     if(event_worker_init(bus))
         return EVT_WORKER_ERR;
-
-    bus->queue = xQueueCreate(MAX_SIMLT_EVT, sizeof(struct event_bus_msg));
-
-    if(bus->queue == NULL)
-        return EVT_BUS_QUEUE_ERR;
-
-    if(xTaskCreate(event_bus_thread, "evt_bus_th", EVT_BUS_STACK_SIZE, (void *)bus, EVT_BUS_PRIO, NULL) != pdPASS)
-    {
-        return EVT_BUS_THREAD_ERR;
-    }     
 
     return 0;
 }
@@ -101,7 +75,7 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_
     return EVT_BUS_ERR_OK;
 }
 
-int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, void *data, bool is_isr)
+int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data)
 {
     struct event_bus_msg msg;
 
@@ -109,16 +83,10 @@ int32_t event_bus_publish_generic(struct event_bus_ctx *bus, uint32_t event_id, 
     msg.app_ctx = bus->app_ctx;
     msg.data = data;
 
-    if(is_isr)
+    if(event_worker_start(bus, &msg, 0, false))
     {
-        if(xQueueSendFromISR(bus->queue,( void * ) &msg, NULL) != pdTRUE)
-            return -1;
-    }else
-    {
-        if(xQueueSend(bus->queue,( void * ) &msg, portMAX_DELAY) != pdTRUE)
-            return -1;
+        printf("[EVENT_BUS]: worker start faield\n");
     }
 
     return 0;
 }
-
