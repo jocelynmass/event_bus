@@ -35,7 +35,7 @@
 
 struct event_bus_hist
 {
-    const char name[EVT_SUB_NAME_MAX_LEN];
+    char name[EVT_SUB_NAME_MAX_LEN];
     uint32_t event_id;
     uint32_t lat;
 };
@@ -46,11 +46,11 @@ struct event_bus_stats
     uint32_t lat_avg;
     uint32_t lat_max;
     uint32_t index;
-    const char lat_max_name[EVT_SUB_NAME_MAX_LEN];
+    char lat_max_name[EVT_SUB_NAME_MAX_LEN];
 };
 
 int32_t event_bus_stats_init(struct event_bus_ctx *bus);
-int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency);
+int32_t event_bus_stats_add(struct event_bus_ctx *bus, char *name, uint32_t event_id, uint32_t latency);
 void event_bus_stats_print(void);
 
 #endif // __EVENT_BUS_STATS_H__

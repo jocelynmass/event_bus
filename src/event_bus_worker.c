@@ -30,6 +30,7 @@
 
 #include "event_bus_worker.h"
 #include "event_bus_supv.h"
+#include "event_bus_stats.h"
 
 static struct event_bus_worker workers[MAX_NB_WORKERS];
 

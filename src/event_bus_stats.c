@@ -41,7 +41,7 @@ int32_t event_bus_stats_init(struct event_bus_ctx *bus)
     return 0;
 }
 
-int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency)
+int32_t event_bus_stats_add(struct event_bus_ctx *bus, char *name, uint32_t event_id, uint32_t latency)
 {
     strcpy(stat_hist[stats.index].name, name);
     stat_hist[stats.index].lat = latency;
@@ -81,14 +81,14 @@ void event_bus_stats_print(void)
 
 	printf("----> event bus stats:\n");
     printf("\t - version = %d.%d\n", EVENT_BUS_MAJOR_REV, EVENT_BUS_MINOR_REV);
-    printf("\t - latency min = %d ms\n", stats.lat_min);
-    printf("\t - latency max = %d ms\n", stats.lat_max);
-	printf("\t - average latency = %d ms\n", stats.lat_avg);
+    printf("\t - latency min = %ld ms\n", stats.lat_min);
+    printf("\t - latency max = %ld ms\n", stats.lat_max);
+	printf("\t - average latency = %ld ms\n", stats.lat_avg);
     printf("\t - max latency subscriber = %s\n", stats.lat_max_name);
     printf("\t - last events stats:\n");
 
     for(i = 0 ; i < EVT_STAT_HIST_DEPTH ; i++)
     {
-        printf("\t\t > subscriber: %s - event id = 0x%.8x - latency = %d ms\n", stat_hist[i].name, stat_hist[i].event_id, stat_hist[i].lat);
+        printf("\t\t > subscriber: %s - event id = 0x%.8lx - latency = %ld ms\n", stat_hist[i].name, stat_hist[i].event_id, stat_hist[i].lat);
     }
 }
