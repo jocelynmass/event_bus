@@ -53,10 +53,21 @@ int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 
 int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
 {
+    uint32_t i;
     struct event_bus_sub *sub;
     
     if(bus->sub_nb >= MAX_NB_SUBSCRIBERS)
         return EVT_BUS_MEM_ERR;
+
+    for(i = 0 ; i < bus->sub_nb ; i++)
+    {
+        sub = &bus->subscribers[i];
+        if(sub_cb == sub->cb)
+        {
+            printf("[EVENT_BUS]: subscriber already exists\n");
+            return 0;
+        }
+    }
 
     sub = &bus->subscribers[bus->sub_nb];
     sub->event_id = event_id;
