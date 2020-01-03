@@ -50,7 +50,7 @@ struct event_bus_stats
 };
 
 int32_t event_bus_stats_init(struct event_bus_ctx *bus);
-int32_t event_bus_stats_add(struct event_bus_ctx *bus, char *name, uint32_t event_id, uint32_t latency);
+int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency);
 void event_bus_stats_print(void);
 
 #endif // __EVENT_BUS_STATS_H__
