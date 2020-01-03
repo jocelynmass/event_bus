@@ -41,9 +41,9 @@ int32_t event_bus_stats_init(struct event_bus_ctx *bus)
     return 0;
 }
 
-int32_t event_bus_stats_add(struct event_bus_ctx *bus, char *name, uint32_t event_id, uint32_t latency)
+int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency)
 {
-    strcpy(stat_hist[stats.index].name, name);
+    strcpy((char *)stat_hist[stats.index].name, name);
     stat_hist[stats.index].lat = latency;
     stat_hist[stats.index].event_id = event_id;
 
@@ -60,7 +60,7 @@ int32_t event_bus_stats_add(struct event_bus_ctx *bus, char *name, uint32_t even
         if(latency > stats.lat_max)
         {
             stats.lat_max = latency;
-            strcpy(stats.lat_max_name, name);
+            strcpy((char *)stats.lat_max_name, name);
         }
 
         stats.lat_avg = (stats.lat_avg + latency)/2;
