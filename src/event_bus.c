@@ -101,3 +101,28 @@ int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *da
 
     return 0;
 }
+
+int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, void *data)
+{
+    uint32_t i, latency = 0;
+    struct event_bus_sub *sub;
+
+    for(i = 0 ; i < bus->sub_nb ; i++)
+    {
+        sub = &bus->subscribers[i];
+
+        if(sub->event_id == event_id)
+        {
+            latency = xTaskGetTickCount();
+            printf("---> pub %s\n", sub->name);
+            sub->cb(bus->app_ctx, data, sub->arg);
+            latency = xTaskGetTickCount() - latency;
+            event_bus_stats_add(bus, sub->name, event_id, latency);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+            
+            

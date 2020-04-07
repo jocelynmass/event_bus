@@ -71,5 +71,6 @@ struct event_bus_ctx
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
 int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
 int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data);
+int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, void *data);
 
 #endif // __EVENT_BUS_H__
