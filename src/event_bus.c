@@ -31,6 +31,7 @@
 
 #include "event_bus.h"
 #include "event_bus_worker.h"
+#include "event_bus_stats.h"
 
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
