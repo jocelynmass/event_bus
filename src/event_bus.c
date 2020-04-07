@@ -114,7 +114,6 @@ int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, v
         if(sub->event_id == event_id)
         {
             latency = xTaskGetTickCount();
-            printf("---> pub %s\n", sub->name);
             sub->cb(bus->app_ctx, data, sub->arg);
             latency = xTaskGetTickCount() - latency;
             event_bus_stats_add(bus, sub->name, event_id, latency);
