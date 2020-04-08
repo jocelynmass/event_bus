@@ -85,4 +85,8 @@
 #define EVT_STAT_HIST_DEPTH         (4)
 #endif
 
+#ifndef EVT_USE_CUSTOM_EVT
+#endif
+
+
 #endif // __EVENT_BUS_DFLT_CFG_H__
