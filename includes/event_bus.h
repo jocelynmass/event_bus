@@ -39,6 +39,7 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "semphr.h"
 #include "event_bus_dflt_cfg.h"
 #include "event_bus_err.h"
 
@@ -65,11 +66,13 @@ struct event_bus_ctx
 {
     uint32_t sub_nb;
     struct event_bus_sub subscribers[MAX_NB_SUBSCRIBERS];
+    SemaphoreHandle_t mutex;
     void *app_ctx;
 };
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
 int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
+int32_t event_bus_unsubscribe(struct event_bus_ctx *bus, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
 int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data);
 int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, void *data);
 

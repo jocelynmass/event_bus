@@ -38,6 +38,7 @@ enum event_err_list
     EVT_BUS_THREAD_ERR = -2,
     EVT_BUS_QUEUE_ERR = -3,
     EVT_WORKER_ERR = -4,
+    EVT_BUS_LOCK_ERR = -5,
 };
 
 #endif // __EVENT_BUS_ERROR_H__

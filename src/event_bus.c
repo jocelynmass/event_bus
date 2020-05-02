@@ -33,6 +33,21 @@
 #include "event_bus_worker.h"
 #include "event_bus_stats.h"
 
+static int32_t event_bus_lock(struct event_bus_ctx *bus)
+{
+    if(xSemaphoreTake(bus->mutex, 500))
+        return 0;
+    
+    return -1;
+}
+
+static int32_t event_bus_unlock(struct event_bus_ctx *bus)
+{
+    if(xSemaphoreGive(bus->mutex))
+        return 0;
+    
+    return -1;
+}
 
 int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 {
@@ -40,13 +55,14 @@ int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
 
     bus->sub_nb = 0;
     bus->app_ctx = app_ctx;
+    bus->mutex = xSemaphoreCreateMutex();
 
     for(i = 0 ; i < MAX_NB_SUBSCRIBERS ; i++)
     {
         memset(&bus->subscribers[i], 0, sizeof(struct event_bus_sub));
     }
 
-    if(event_worker_init(bus))
+    if(event_worker_init(bus) || bus->mutex == NULL)
         return EVT_WORKER_ERR;
 
     return 0;
@@ -60,13 +76,18 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_
     if(bus->sub_nb >= MAX_NB_SUBSCRIBERS)
         return EVT_BUS_MEM_ERR;
 
+    if(event_bus_lock(bus))
+    {
+        return EVT_BUS_LOCK_ERR;
+    }
+
     for(i = 0 ; i < bus->sub_nb ; i++)
     {
         sub = &bus->subscribers[i];
         if(sub_cb == sub->cb)
         {
             printf("[EVENT_BUS]: subscriber already exists\n");
-            return 0;
+            goto exit;
         }
     }
 
@@ -84,6 +105,46 @@ int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_
 
     bus->sub_nb++;
 
+exit:
+    event_bus_unlock(bus);
+    return EVT_BUS_ERR_OK;
+}
+
+int32_t event_bus_unsubscribe(struct event_bus_ctx *bus, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
+{
+    uint32_t i;
+    int32_t pos = -1;
+    bool found = false;
+    struct event_bus_sub *sub;
+    
+    if(bus->sub_nb >= MAX_NB_SUBSCRIBERS)
+        return EVT_BUS_MEM_ERR;
+
+    if(event_bus_lock(bus))
+    {
+        return EVT_BUS_LOCK_ERR;
+    }
+
+    for(i = 0 ; i < bus->sub_nb ; i++)
+    {
+        sub = &bus->subscribers[i];
+        if(!found && (sub_cb == sub->cb))
+        {
+            found = true;
+             bus->sub_nb--;
+        }
+
+        if(found)
+        {
+            memcpy(sub, &bus->subscribers[i+1], sizeof(struct event_bus_sub));
+            if(i == bus->sub_nb-1)
+            {
+                 memset(&bus->subscribers[i+1], 0, sizeof(struct event_bus_sub));
+            }
+        }
+    }
+
+    event_bus_unlock(bus);
     return EVT_BUS_ERR_OK;
 }
 
