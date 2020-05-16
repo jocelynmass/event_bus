@@ -30,18 +30,18 @@
 
 #include "event_bus_stats.h"
 
-static struct event_bus_hist stat_hist[EVT_STAT_HIST_DEPTH];
-static struct event_bus_stats stats;
+static struct eb_hist stat_hist[EB_STAT_HIST_DEPTH];
+static struct eb_stats stats;
 
-int32_t event_bus_stats_init(struct event_bus_ctx *bus)
+int32_t eb_stats_init(struct eb_ctx *bus)
 {
-    memset(&stats, 0, sizeof(struct event_bus_stats));
-    memset(stat_hist, 0, sizeof(struct event_bus_hist)*EVT_STAT_HIST_DEPTH);
+    memset(&stats, 0, sizeof(struct eb_stats));
+    memset(stat_hist, 0, sizeof(struct eb_hist)*EB_STAT_HIST_DEPTH);
 
     return 0;
 }
 
-int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_t event_id, uint32_t latency)
+int32_t eb_stats_add(struct eb_ctx *bus, const char *name, uint32_t event_id, uint32_t latency)
 {
     strcpy((char *)stat_hist[stats.index].name, name);
     stat_hist[stats.index].lat = latency;
@@ -67,7 +67,7 @@ int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_
     }
 
     stats.index++;
-    if(stats.index >= EVT_STAT_HIST_DEPTH)
+    if(stats.index >= EB_STAT_HIST_DEPTH)
     {
         stats.index = 0;
     }
@@ -75,7 +75,7 @@ int32_t event_bus_stats_add(struct event_bus_ctx *bus, const char *name, uint32_
     return 0;
 }
 
-void event_bus_stats_print(void)
+void eb_stats_print(void)
 {
     uint32_t i;
 
@@ -87,7 +87,7 @@ void event_bus_stats_print(void)
     printf("\t - max latency subscriber = %s\n", stats.lat_max_name);
     printf("\t - last events stats:\n");
 
-    for(i = 0 ; i < EVT_STAT_HIST_DEPTH ; i++)
+    for(i = 0 ; i < EB_STAT_HIST_DEPTH ; i++)
     {
         printf("\t\t > subscriber: %s - event id = 0x%.8lx - latency = %ld ms\n", stat_hist[i].name, stat_hist[i].event_id, stat_hist[i].lat);
     }

@@ -32,112 +32,154 @@
 #include "event_bus_supv.h"
 #include "event_bus_stats.h"
 
-static struct event_bus_worker workers[MAX_NB_WORKERS];
+static struct eb_worker workers[MAX_NB_WORKERS];
 
-static void event_worker_thread(void *arg);
-static void event_worker_timeout(TimerHandle_t xTimer);
+static void eb_worker_thread(void *arg);
+static struct eb_worker *eb_worker_get(uint32_t *id);
+static void eb_worker_timeout(TimerHandle_t xTimer);
 
-static void event_worker_timeout(TimerHandle_t xTimer)
+static void eb_worker_timeout(TimerHandle_t xTimer)
 {
-    struct event_bus_worker *worker;
-    struct event_bus_ctx *bus; 
-    struct event_bus_msg *msg; 
+    struct eb_worker *worker;
+    struct eb_ctx *bus; 
+    struct eb_msg *msg; 
+    struct eb_evt *evt;
 
-    worker = (struct event_bus_worker *)pvTimerGetTimerID(xTimer);
-    worker->offset++;
     // pvTimerGetTimerID return a pointer on the current running worker
     // This worker is taking to much time to proceed so we start a new worker
     // We need to ensure the current worker won't call the subscribers again when
     // the current callback will be completed. To do so we set the worker as canceled
-    worker->canceled = true;
-    bus = worker->msg.bus;
-    msg = &worker->msg.data;
 
-    event_worker_start(bus, msg, worker->offset, false);
+    worker = (struct eb_worker *)pvTimerGetTimerID(xTimer);
+    worker->index++;
+    worker->canceled = true;
+    bus = worker->params.bus;
+    msg = &worker->params.msg;
+    evt = msg->evt;
+
+    if(evt->nb_sub > worker->index)
+    {
+        eb_worker_process(bus, msg->evt, worker->index, msg->data, msg->len);
+    }
 }
 
-static void event_worker_thread(void *arg)
+static struct eb_worker *eb_worker_get(uint32_t *id)
 {
-    struct event_bus_worker *worker = (struct event_bus_worker *)arg;
-    struct event_bus_ctx *bus = worker->msg.bus;
-    struct event_bus_msg *msg = &worker->msg.data;
+    for(*id = 0 ; *id < MAX_NB_WORKERS ; (*id)++)
+    {
+        if(workers[*id].thread_hdl == NULL)
+        {
+            return &workers[*id];
+        }
+    }
+
+    return NULL;
+}
+
+static void eb_worker_thread(void *arg)
+{
+    struct eb_worker *worker = (struct eb_worker *)arg;
+    struct eb_ctx *bus = worker->params.bus;
+    struct eb_msg *msg = &worker->params.msg;
+    struct eb_evt *evt = msg->evt;
+    struct eb_sub *sub;
     void *usr_arg;
     uint32_t i, latency = 0;
 
+    // Call all sub first
+    sub = &bus->all_sub;
 
-    for(i = worker->offset ; i < MAX_NB_SUBSCRIBERS ; i++)
+    if((sub->direct == false) && (sub->cb) && (worker->index == 0))
     {
-        if(bus->subscribers[i].event_id == msg->event_id)
+        eb_worker_exec(bus, sub, evt->id, msg->data, msg->len);
+    }
+    
+    for(i = worker->index ; i < evt->nb_sub ; i++)
+    {
+        sub = &evt->subs[i];
+        
+        if(sub->direct == false && sub->cb)
         {
-            // The event bus supervisor is checking if the callback is taking to much time to complete
-            // if so the supervisor defer the other callbacks to a new thread. This ensure each
-            // subscriber to be notified within a constrained delay
-            worker->offset++;
-            if(event_supv_start(worker, event_worker_timeout))
-                printf("[EVENT_BUS]: supervisor failed to start, no exec optimization available\n");
+            if(eb_supv_start(worker, eb_worker_timeout))
+            {
+                eb_log_warn(EB_TAG, "supervisor failed to start, no exec optimization available\n");
+            }
 
-            usr_arg = bus->subscribers[i].arg;
-            latency = xTaskGetTickCount();
-            bus->subscribers[i].cb(msg->app_ctx, msg->data, usr_arg);
-            latency = xTaskGetTickCount() - latency;
-            
-            event_bus_stats_add(bus, bus->subscribers[i].name, msg->event_id, latency);
-
-            event_supv_stop(worker);
+            eb_worker_exec(bus, sub, evt->id, msg->data, msg->len);
+            eb_supv_stop(worker);
 
             if(worker->canceled)
             {
-                printf("[EVENT_BUS]: worker has been canceled\n");
-                break;
+                eb_log_trace(EB_TAG, "worker has been canceled\n");
+                goto exit;
             }
         }
     }
 
+exit:
     worker->thread_hdl = NULL;
 
-    memset(worker->name, 0, sizeof(char) * EVT_WORKER_MAX_NAME_LEN);
-    memset(worker, 0, sizeof(struct event_bus_worker));
+    if(msg->data)
+    {
+        free(msg->data);
+    }
+    memset(worker->name, 0, sizeof(worker->name));
+    memset(worker, 0, sizeof(struct eb_worker));
     vTaskDelete(NULL);
 }
 
-int32_t event_worker_init(struct event_bus_ctx *bus)
+int32_t eb_worker_init(struct eb_ctx *bus)
 {
-    uint32_t i;
+    memset(workers, 0, sizeof(workers));
+    return 0;
+}
 
-    for(i = 0 ; i < MAX_NB_WORKERS ; i++)
-    {
-        memset(&workers[i], 0, sizeof(struct event_bus_worker));
-    }
+int32_t eb_worker_exec(struct eb_ctx *bus, struct eb_sub *sub, uint32_t event_id, void *data, uint32_t len)
+{
+    uint32_t latency = 0;
+
+    latency = xTaskGetTickCount();
+    sub->cb(bus->app_ctx, event_id, data, len, sub->arg);
+    latency = xTaskGetTickCount() - latency;
+    eb_stats_add(bus, sub->name, event_id, latency);
 
     return 0;
 }
 
-int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg, uint8_t offset, bool wait)
+int32_t eb_worker_process(struct eb_ctx *bus, struct eb_evt *evt, uint8_t index, void *data, uint32_t len)
 {
-    uint32_t i;
-    struct event_bus_worker *worker;
+    uint32_t id = 0;
+    struct eb_worker *worker;
 
-    for(i = 0 ; i < MAX_NB_WORKERS ; i++)
+    worker = eb_worker_get(&id);
+
+    if(worker == NULL)
     {
-        worker = &workers[i];
-
-        if(worker->thread_hdl == NULL)
-        {
-            worker->msg.bus = bus;
-            worker->offset = offset;
-            worker->canceled = false;
-            sprintf(worker->name, "worker_%ld_th", i);
-            memcpy(&worker->msg.data, msg, sizeof(struct event_bus_msg));
-
-            if(xTaskCreate(event_worker_thread, worker->name, EVT_WORKER_STACK_SIZE, (void *)worker, EVT_WORKER_PRIO, &worker->thread_hdl) != pdPASS)
-            {
-                printf("[EVENT_BUS]: %s failed\n", worker->name);
-                return -1;
-            }  
-
-            return 0;
-        }
+        eb_log_err(EB_TAG, "no workers available, drop event id 0x%x\n", evt->id);
+        return -1;
     }
+
+    sprintf(worker->name, "wkr_%ld_th", id);
+    worker->params.bus = bus;
+    worker->params.msg.evt = evt;
+    worker->index = index;
+
+    if(len > 0)
+    {
+        worker->params.msg.data = malloc(len); //TODO: replace by a mempool alloc
+        if(worker->params.msg.data == NULL)
+        {
+            eb_log_err(EB_TAG, "data alloc failed for event id 0x%x\n", evt->id);
+            return -1;
+        }
+        memcpy(worker->params.msg.data, data, len);
+    }
+
+    if(xTaskCreate(eb_worker_thread, worker->name, EB_WORKER_STACK_SIZE, (void *)worker, EB_WORKER_PRIO, &worker->thread_hdl) != pdPASS)
+    {
+        eb_log_err(EB_TAG, "%s failed\n", worker->name);
+        return -1;
+    }  
 
     return 0;
 }

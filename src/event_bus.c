@@ -28,12 +28,11 @@
  * WITH THE SOFTWARE.
  */
 
-
 #include "event_bus.h"
 #include "event_bus_worker.h"
 #include "event_bus_stats.h"
 
-static int32_t event_bus_lock(struct event_bus_ctx *bus)
+static int32_t eb_lock(struct eb_ctx *bus)
 {
     if(xSemaphoreTake(bus->mutex, 500))
         return 0;
@@ -41,7 +40,7 @@ static int32_t event_bus_lock(struct event_bus_ctx *bus)
     return -1;
 }
 
-static int32_t event_bus_unlock(struct event_bus_ctx *bus)
+static int32_t eb_unlock(struct eb_ctx *bus)
 {
     if(xSemaphoreGive(bus->mutex))
         return 0;
@@ -49,141 +48,260 @@ static int32_t event_bus_unlock(struct event_bus_ctx *bus)
     return -1;
 }
 
-int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx)
+static struct eb_evt *eb_search_event(struct eb_ctx *bus, uint32_t event_id)
 {
     uint32_t i;
 
-    bus->sub_nb = 0;
-    bus->app_ctx = app_ctx;
-    bus->mutex = xSemaphoreCreateMutex();
-
-    for(i = 0 ; i < MAX_NB_SUBSCRIBERS ; i++)
+    for(i = 0 ; i < bus->nb_evt ; i++)
     {
-        memset(&bus->subscribers[i], 0, sizeof(struct event_bus_sub));
+        if(bus->events[i].id == event_id)
+        {
+            return &bus->events[i];
+        }
     }
 
-    if(event_worker_init(bus) || bus->mutex == NULL)
-        return EVT_WORKER_ERR;
-
-    return 0;
+    return NULL;
 }
 
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
+static struct eb_evt *eb_get_event_ctx(struct eb_ctx *bus, uint32_t event_id)
 {
-    uint32_t i;
-    struct event_bus_sub *sub;
-    
-    if(bus->sub_nb >= MAX_NB_SUBSCRIBERS)
-        return EVT_BUS_MEM_ERR;
+    struct eb_evt *evt;
 
-    if(event_bus_lock(bus))
+    evt = eb_search_event(bus, event_id);
+
+    if(bus->nb_evt > MAX_NB_EVENTS)
+    {
+        return NULL;
+    }
+
+    if(evt == NULL)
+    {
+        evt = &bus->events[bus->nb_evt];
+        bus->nb_evt++;
+    }
+    
+    return evt;
+}
+
+static int32_t eb_subscribe(struct eb_ctx *bus, const char *name, bool direct, uint32_t event_id, void *arg, eb_sub_cb_t *cb)
+{
+    uint32_t i = 0;
+    struct eb_evt *evt;
+    struct eb_sub *sub;
+
+    if(eb_lock(bus))
     {
         return EVT_BUS_LOCK_ERR;
     }
 
-    for(i = 0 ; i < bus->sub_nb ; i++)
+    evt = eb_get_event_ctx(bus, event_id);
+
+    if(evt == NULL) 
     {
-        sub = &bus->subscribers[i];
-        if(sub_cb == sub->cb)
+        return EVT_BUS_MEM_ERR;
+    }
+
+    evt->id = event_id;
+    for(i = 0 ; i < evt->nb_sub ; i++)
+    {
+        sub = &evt->subs[i];
+        if(sub->cb == cb)
         {
-            printf("[EVENT_BUS]: subscriber already exists\n");
+            eb_log_warn(EB_TAG, "subscriber already exists\n");
             goto exit;
         }
     }
 
-    sub = &bus->subscribers[bus->sub_nb];
-    sub->event_id = event_id;
-    sub->cb = sub_cb;
+    sub = &evt->subs[evt->nb_sub++];
+    sub->cb = cb;
     sub->arg = arg;
-
-    memset(sub->name, 0, EVT_SUB_NAME_MAX_LEN);
-
-    if(strlen(name) > EVT_SUB_NAME_MAX_LEN)
-        strncpy(sub->name, name, EVT_SUB_NAME_MAX_LEN-1);
-    else
-        strcpy(sub->name, name);
-
-    bus->sub_nb++;
+    sub->direct = direct;
+    
+    memset(sub->name, 0, EB_SUB_NAME_MAX_LEN);
+    strncpy(sub->name, name, MIN(strlen(name), EB_SUB_NAME_MAX_LEN-1));
 
 exit:
-    event_bus_unlock(bus);
+    eb_unlock(bus);
     return EVT_BUS_ERR_OK;
 }
 
-int32_t event_bus_unsubscribe(struct event_bus_ctx *bus, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg))
+static int32_t eb_subscribe_all(struct eb_ctx *bus, bool direct, void *arg, eb_sub_cb_t *cb)
 {
-    uint32_t i;
-    int32_t pos = -1;
-    bool found = false;
-    struct event_bus_sub *sub;
-    
-    if(bus->sub_nb >= MAX_NB_SUBSCRIBERS)
-        return EVT_BUS_MEM_ERR;
-
-    if(event_bus_lock(bus))
+    if(eb_lock(bus))
     {
         return EVT_BUS_LOCK_ERR;
     }
 
-    for(i = 0 ; i < bus->sub_nb ; i++)
-    {
-        sub = &bus->subscribers[i];
-        if(!found && (sub_cb == sub->cb))
-        {
-            found = true;
-             bus->sub_nb--;
-        }
+    strcpy(bus->all_sub.name, "all_sub");
+    bus->all_sub.arg = arg;
+    bus->all_sub.cb = cb;
+    bus->all_sub.direct = direct;
 
-        if(found)
-        {
-            memcpy(sub, &bus->subscribers[i+1], sizeof(struct event_bus_sub));
-            if(i == bus->sub_nb-1)
-            {
-                 memset(&bus->subscribers[i+1], 0, sizeof(struct event_bus_sub));
-            }
-        }
-    }
-
-    event_bus_unlock(bus);
+    eb_unlock(bus);
     return EVT_BUS_ERR_OK;
 }
 
-int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data)
-{
-    struct event_bus_msg msg;
-
-    msg.event_id = event_id;
-    msg.app_ctx = bus->app_ctx;
-    msg.data = data;
-
-    if(event_worker_start(bus, &msg, 0, false))
-    {
-        printf("[EVENT_BUS]: worker start faield\n");
-    }
-
-    return 0;
-}
-
-int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, void *data)
+static int32_t eb_publish_direct(struct eb_ctx *bus, struct eb_evt *evt, void *data, uint32_t len)
 {
     uint32_t i, latency = 0;
-    struct event_bus_sub *sub;
+    struct eb_sub *sub;
 
-    for(i = 0 ; i < bus->sub_nb ; i++)
+    if(evt == NULL)
     {
-        sub = &bus->subscribers[i];
+        return -1;
+    }
 
-        if(sub->event_id == event_id)
+    for(i = 0 ; i < evt->nb_sub ; i++)
+    {
+        sub = &evt->subs[i];
+
+        if(sub->direct && sub->cb)
         {
-            latency = xTaskGetTickCount();
-            sub->cb(bus->app_ctx, data, sub->arg);
-            latency = xTaskGetTickCount() - latency;
-            event_bus_stats_add(bus, sub->name, event_id, latency);
-            return 0;
+            eb_worker_exec(bus, sub, evt->id, data, len);
         }
     }
 
     return -1;
+}
+
+static bool eb_is_indirect_sub(struct eb_ctx *bus, struct eb_evt *evt)
+{
+    uint32_t i;
+    struct eb_sub *sub;
+
+    if(evt == NULL)
+    {
+        return false;
+    }
+
+    for(i = 0 ; i < evt->nb_sub ; i++)
+    {
+        sub = &evt->subs[i];
+
+        if(!sub->direct)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int32_t eb_init(struct eb_ctx *bus, void *app_ctx)
+{
+    uint32_t i;
+
+    bus->nb_evt = 0;
+    bus->app_ctx = app_ctx;
+    bus->mutex = xSemaphoreCreateMutex();
+    memset(bus->events, 0, sizeof(bus->events));
+    memset(&bus->all_sub, 0, sizeof(bus->all_sub));
+
+    if(eb_worker_init(bus) || bus->mutex == NULL)
+        return EVT_WORKER_ERR;
+
+    eb_log_trace(EB_TAG, "init done\n");
+    return 0;
+}
+
+int32_t eb_unsub(struct eb_ctx *bus, uint32_t event_id, eb_sub_cb_t *cb)
+{
+    uint32_t i;
+    int32_t pos = -1;
+    bool found = false;
+    struct eb_evt *evt;
+    struct eb_sub *sub;
+
+    if(eb_lock(bus))
+    {
+        return EVT_BUS_LOCK_ERR;
+    }
+
+    evt = eb_search_event(bus, event_id);
+
+    if(evt == NULL)
+    {
+        goto exit;
+    }
+
+    for(i = 0 ; i < evt->nb_sub ; i++)
+    {
+        sub = &evt->subs[i];
+        if(sub->cb == cb)
+        {
+            found = true;
+            evt->nb_sub--;
+        }
+
+        if(found)
+        {
+            memcpy(sub, &evt->subs[i+1], sizeof(struct eb_sub));
+            if(i == evt->nb_sub-1)
+            {
+                memset(&evt->subs[i+1], 0, sizeof(struct eb_sub));
+            }
+        }
+    }
+
+exit:
+    eb_unlock(bus);
+    return EVT_BUS_ERR_OK;
+}
+
+int32_t eb_sub_direct(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb)
+{
+    return eb_subscribe(bus, name, true, event_id, arg, cb);
+}
+
+int32_t eb_sub_indirect(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb)
+{
+    return eb_subscribe(bus, name, false, event_id, arg, cb);
+}
+
+int32_t eb_sub_all_direct(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb)
+{
+    return eb_subscribe_all(bus, true, arg, cb);
+}
+
+int32_t eb_sub_all_indirect(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb)
+{
+    return eb_subscribe_all(bus, false, arg, cb);
+}
+
+int32_t eb_pub(struct eb_ctx *bus, uint32_t event_id, void *data, uint32_t len)
+{
+    static struct eb_evt fake_evt;
+    struct eb_evt *evt;
+    struct eb_sub *sub;
+    int32_t rc = 0;
+    
+    evt = eb_search_event(bus, event_id);
+    
+    sub = &bus->all_sub;
+    if(sub->direct && sub->cb)
+    {
+        eb_worker_exec(bus, sub, event_id, data, len);
+    }
+
+    if(eb_is_indirect_sub(bus, evt) || (sub->direct == false))
+    {
+        // if evt == NULL this means we don't have any subscriber to this
+        // event. We still need to call the all_sub cb, to do so we need to 
+        // create a fake event with the current event id
+        if(evt == NULL)
+        {
+            memset(&fake_evt, 0, sizeof(fake_evt));
+            fake_evt.id = event_id;
+            fake_evt.nb_sub = 0;
+            evt = &fake_evt;
+        }
+
+        rc = eb_worker_process(bus, evt, 0, data, len);
+    }
+    
+    rc |= eb_publish_direct(bus, evt, data, len);
+
+    return rc;
 }
             
             

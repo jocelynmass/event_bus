@@ -43,37 +43,51 @@
 #include "event_bus_dflt_cfg.h"
 #include "event_bus_err.h"
 
-// Version 1.1
-#define EVENT_BUS_MAJOR_REV     1
-#define EVENT_BUS_MINOR_REV     1
+// Version 2.0
+#define EVENT_BUS_MAJOR_REV     2
+#define EVENT_BUS_MINOR_REV     0
+#define EB_TAG                  "EB"
 
-struct event_bus_msg
+typedef int32_t (eb_sub_cb_t)(void *app_ctx, uint32_t event_id, void *data, uint32_t len, void *arg);
+
+
+struct eb_sub
 {
-    uint32_t event_id;
-    void *app_ctx;
+    char name[EB_SUB_NAME_MAX_LEN];
+    void *arg;
+    bool direct;
+    eb_sub_cb_t *cb;
+};
+
+struct eb_evt
+{
+    uint32_t id;
+    uint32_t nb_sub;
+    struct eb_sub subs[MAX_NB_SUBSCRIBERS];
+};
+
+struct eb_msg
+{
+    struct eb_event *evt;
+    uint32_t len;
     void *data;
 };
 
-struct event_bus_sub
+struct eb_ctx
 {
-    char name[EVT_SUB_NAME_MAX_LEN];
-    uint32_t event_id;
-    void *arg;
-    int32_t (*cb)(void *app_ctx, void *data, void *arg);
-};
-
-struct event_bus_ctx
-{
-    uint32_t sub_nb;
-    struct event_bus_sub subscribers[MAX_NB_SUBSCRIBERS];
+    uint32_t nb_evt;
+    struct eb_evt events[MAX_NB_EVENTS];
+    struct eb_sub all_sub;
     SemaphoreHandle_t mutex;
     void *app_ctx;
 };
 
-int32_t event_bus_init(struct event_bus_ctx *bus, void *app_ctx);
-int32_t event_bus_subscribe(struct event_bus_ctx *bus, const char *name, uint32_t event_id, void *arg, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
-int32_t event_bus_unsubscribe(struct event_bus_ctx *bus, int32_t (*sub_cb)(void *app_ctx, void *data, void *arg));
-int32_t event_bus_publish(struct event_bus_ctx *bus, uint32_t event_id, void *data);
-int32_t event_bus_publish_direct(struct event_bus_ctx *bus, uint32_t event_id, void *data);
+int32_t eb_init(struct eb_ctx *bus, void *app_ctx);
+int32_t eb_unsub(struct eb_ctx *bus, uint32_t event_id, eb_sub_cb_t *cb);
+int32_t eb_sub_direct(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_indirect(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_all_direct(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_all_indirect(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb);
+int32_t eb_pub(struct eb_ctx *bus, uint32_t event_id, void *data, uint32_t len);
 
 #endif // __EVENT_BUS_H__

@@ -37,6 +37,10 @@
 #include "timers.h"
 #include "event_bus_cfg.h"
 
+#ifndef MAX_NB_EVENTS
+#define MAX_NB_EVENTS               16
+#endif
+
 #ifndef MAX_NB_SUBSCRIBERS
 #define MAX_NB_SUBSCRIBERS          16
 #endif
@@ -49,44 +53,64 @@
 #define MAX_SIMLT_EVT               8
 #endif
 
-#ifndef EVT_BUS_STACK_SIZE
-#define EVT_BUS_STACK_SIZE          (configMINIMAL_STACK_SIZE * 4)
+#ifndef EB_STACK_SIZE
+#define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
 #endif
 
-#ifndef EVT_BUS_PRIO
-#define EVT_BUS_PRIO                (tskIDLE_PRIORITY + 1)
+#ifndef EB_PRIO
+#define EB_PRIO                     (tskIDLE_PRIORITY + 1)
 #endif
 
-#ifndef EVT_WORKER_STACK_SIZE
-#define EVT_WORKER_STACK_SIZE       (configMINIMAL_STACK_SIZE * 4)
+#ifndef EB_WORKER_STACK_SIZE
+#define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
 #endif
 
-#ifndef EVT_WORKER_PRIO
-#define EVT_WORKER_PRIO             (tskIDLE_PRIORITY + 1)
+#ifndef EB_WORKER_PRIO
+#define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
 #endif
 
-#ifndef EVT_WORKER_MAX_NAME_LEN
-#define EVT_WORKER_MAX_NAME_LEN     (16)
+#ifndef EB_WORKER_MAX_NAME_LEN
+#define EB_WORKER_MAX_NAME_LEN     (16)
 #endif
 
-#ifndef EVT_SUPV_MAX_TIMER
-#define EVT_SUPV_MAX_TIMER          (4)
+#ifndef EB_SUPV_MAX_TIMER
+#define EB_SUPV_MAX_TIMER          (4)
 #endif
 
-#ifndef EVT_MAX_SUB_LATENCY_MS
-#define EVT_MAX_SUB_LATENCY_MS      (100)
+#ifndef EB_MAX_SUB_LATENCY_MS
+#define EB_MAX_SUB_LATENCY_MS      (100)
 #endif
 
-#ifndef EVT_SUB_NAME_MAX_LEN
-#define EVT_SUB_NAME_MAX_LEN        (16)
+#ifndef EB_SUB_NAME_MAX_LEN
+#define EB_SUB_NAME_MAX_LEN        (16)
 #endif
 
-#ifndef EVT_STAT_HIST_DEPTH
-#define EVT_STAT_HIST_DEPTH         (4)
+#ifndef EB_STAT_HIST_DEPTH
+#define EB_STAT_HIST_DEPTH         (4)
 #endif
 
-#ifndef EVT_USE_CUSTOM_EVT
+#ifndef EB_USE_CUSTOM_EVT
 #endif
 
+#ifndef MIN 
+#define MIN(a,b)                   (a > b ? b : a)
+#endif
+
+#include "log.h"
+#ifndef eb_log_trace
+#define eb_log_trace                log_trace
+#endif
+
+#ifndef eb_log_warn
+#define eb_log_warn                 log_warn
+#endif
+
+#ifndef eb_log_err
+#define eb_log_err                  log_err
+#endif
+
+#ifndef eb_log_evt
+#define eb_log_evt                  log_evt
+#endif
 
 #endif // __EVENT_BUS_DFLT_CFG_H__

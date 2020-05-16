@@ -31,7 +31,7 @@
 #ifndef __EVENT_BUS_ERROR_H__
 #define __EVENT_BUS_ERROR_H__
 
-enum event_err_list
+enum eb_err_list
 {
     EVT_BUS_ERR_OK = 0,
     EVT_BUS_MEM_ERR = -1,

@@ -33,23 +33,24 @@
 
 #include "event_bus.h"
 
-struct event_bus_worker_msg
+struct eb_worker_param
 {
-    struct event_bus_ctx *bus;
-    struct event_bus_msg data;
+    struct eb_ctx *bus;
+    struct eb_msg msg;
 };
 
-struct event_bus_worker
+struct eb_worker
 {
-    char name[EVT_WORKER_MAX_NAME_LEN];
+    char name[EB_WORKER_MAX_NAME_LEN];
     TaskHandle_t thread_hdl;
     TimerHandle_t tmr_hdl;
-    struct event_bus_worker_msg msg;
-    uint8_t offset;
+    struct eb_worker_param params;
+    uint8_t index;
     bool canceled;
 };
 
-int32_t event_worker_init(struct event_bus_ctx *bus);
-int32_t event_worker_start(struct event_bus_ctx *bus, struct event_bus_msg *msg, uint8_t offset, bool wait);
+int32_t eb_worker_init(struct eb_ctx *bus);
+int32_t eb_worker_exec(struct eb_ctx *bus, struct eb_sub *sub, uint32_t event_id, void *data, uint32_t len);
+int32_t eb_worker_process(struct eb_ctx *bus, struct eb_evt *evt, uint8_t index, void *data, uint32_t len);
 
 #endif
