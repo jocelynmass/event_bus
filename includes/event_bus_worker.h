@@ -42,8 +42,8 @@ struct eb_worker_param
 struct eb_worker
 {
     char name[EB_WORKER_MAX_NAME_LEN];
-    TaskHandle_t thread_hdl;
-    TimerHandle_t tmr_hdl;
+    eb_thread_t thread_hdl;
+    eb_timer_t tmr;
     struct eb_worker_param params;
     uint8_t index;
     bool canceled;

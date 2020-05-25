@@ -32,26 +32,24 @@
 #include "event_bus_worker.h"
 
 
-int32_t eb_supv_start(struct eb_worker *worker, void (* timeout_cb)(TimerHandle_t xTimer))
+int32_t eb_supv_start(struct eb_worker *worker, void (* timeout_cb)(void *arg))
 {
-    if(worker->tmr_hdl != NULL)
+    if(worker->tmr.hdl != NULL)
         return -1;
-
-    worker->tmr_hdl = xTimerCreate("evt_supv_tmr", EVT_MAX_SUB_LATENCY_MS, pdFALSE, (void *)worker, timeout_cb);
-
-    if(worker->tmr_hdl == NULL)
+    
+    if(eb_timer_new(&worker->tmr, "evt_supv_tmr", EVT_MAX_SUB_LATENCY_MS, timeout_cb, (void *)worker))
+    {
         return -1;
+    }
 
-    xTimerStart(worker->tmr_hdl, 0);
+    eb_timer_start(&worker->tmr);
 
     return 0;
 }
 
 int32_t eb_supv_stop(struct eb_worker *worker)
 {
-    xTimerStop(worker->tmr_hdl, 0);
-	xTimerDelete(worker->tmr_hdl, 0);
-    worker->tmr_hdl = NULL;
-
+    eb_timer_stop(&worker->tmr);
+    eb_timer_delete(&worker->tmr);
     return 0;
 }

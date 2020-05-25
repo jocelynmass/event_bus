@@ -35,18 +35,13 @@
 #include <stdbool.h>
 #include <stdio.h> 
 #include <string.h> 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "timers.h"
-#include "semphr.h"
 #include "event_bus_dflt_cfg.h"
 #include "event_bus_err.h"
+#include "eb_port.h"
 
-// Version 2.0
+// Version 2.1
 #define EVENT_BUS_MAJOR_REV     2
-#define EVENT_BUS_MINOR_REV     0
-#define EB_TAG                  "EB"
+#define EVENT_BUS_MINOR_REV     1
 
 typedef int32_t (eb_sub_cb_t)(void *app_ctx, uint32_t event_id, void *data, uint32_t len, void *arg);
 
@@ -68,7 +63,7 @@ struct eb_evt
 
 struct eb_msg
 {
-    struct eb_event *evt;
+    struct eb_evt *evt;
     uint32_t len;
     void *data;
 };
@@ -78,7 +73,7 @@ struct eb_ctx
     uint32_t nb_evt;
     struct eb_evt events[MAX_NB_EVENTS];
     struct eb_sub all_sub;
-    SemaphoreHandle_t mutex;
+    eb_mutex_t p_mutex;
     void *app_ctx;
 };
 

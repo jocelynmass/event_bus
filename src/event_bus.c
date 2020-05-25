@@ -34,7 +34,7 @@
 
 static int32_t eb_lock(struct eb_ctx *bus)
 {
-    if(xSemaphoreTake(bus->mutex, 500))
+    if(eb_mutex_take(&bus->p_mutex, 500))
         return 0;
     
     return -1;
@@ -42,7 +42,7 @@ static int32_t eb_lock(struct eb_ctx *bus)
 
 static int32_t eb_unlock(struct eb_ctx *bus)
 {
-    if(xSemaphoreGive(bus->mutex))
+    if(eb_mutex_give(&bus->p_mutex))
         return 0;
     
     return -1;
@@ -107,7 +107,7 @@ static int32_t eb_subscribe(struct eb_ctx *bus, const char *name, bool direct, u
         sub = &evt->subs[i];
         if(sub->cb == cb)
         {
-            eb_log_warn(EB_TAG, "subscriber already exists\n");
+            eb_log_warn("subscriber already exists\n");
             goto exit;
         }
     }
@@ -143,7 +143,7 @@ static int32_t eb_subscribe_all(struct eb_ctx *bus, bool direct, void *arg, eb_s
 
 static int32_t eb_publish_direct(struct eb_ctx *bus, struct eb_evt *evt, void *data, uint32_t len)
 {
-    uint32_t i, latency = 0;
+    uint32_t i;
     struct eb_sub *sub;
 
     if(evt == NULL)
@@ -189,25 +189,23 @@ static bool eb_is_indirect_sub(struct eb_ctx *bus, struct eb_evt *evt)
 
 int32_t eb_init(struct eb_ctx *bus, void *app_ctx)
 {
-    uint32_t i;
-
     bus->nb_evt = 0;
     bus->app_ctx = app_ctx;
-    bus->mutex = xSemaphoreCreateMutex();
+
+    eb_mutex_new(&bus->p_mutex);
     memset(bus->events, 0, sizeof(bus->events));
     memset(&bus->all_sub, 0, sizeof(bus->all_sub));
 
-    if(eb_worker_init(bus) || bus->mutex == NULL)
+    if(eb_worker_init(bus) || bus->p_mutex == NULL)
         return EVT_WORKER_ERR;
 
-    eb_log_trace(EB_TAG, "init done\n");
+    eb_log_trace("init done\n");
     return 0;
 }
 
 int32_t eb_unsub(struct eb_ctx *bus, uint32_t event_id, eb_sub_cb_t *cb)
 {
     uint32_t i;
-    int32_t pos = -1;
     bool found = false;
     struct eb_evt *evt;
     struct eb_sub *sub;

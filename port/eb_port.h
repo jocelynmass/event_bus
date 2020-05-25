@@ -28,92 +28,39 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EVENT_BUS_DFLT_CFG_H__
-#define __EVENT_BUS_DFLT_CFG_H__
+#ifndef __EB_PORT_H__
+#define __EB_PORT_H__
 
-#include "event_bus_cfg.h"
+#ifdef USE_FREERTOS
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
+#include "semphr.h"
 
-#ifndef MAX_NB_EVENTS
-#define MAX_NB_EVENTS               16
+typedef SemaphoreHandle_t eb_mutex_t;
+typedef TaskHandle_t eb_thread_t;
+typedef struct eb_timer_t
+{
+    TimerHandle_t hdl;
+    void *arg;
+    void (*cb)(void *arg);
+}eb_timer_t;
+
 #endif
 
-#ifndef MAX_NB_SUBSCRIBERS
-#define MAX_NB_SUBSCRIBERS          16
-#endif
 
-#ifndef MAX_NB_WORKERS
-#define MAX_NB_WORKERS              4
-#endif
+int32_t eb_mutex_new(eb_mutex_t *mutex);
+int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout);
+int32_t eb_mutex_give(eb_mutex_t *mutex);
 
-#ifndef MAX_SIMLT_EVT
-#define MAX_SIMLT_EVT               8
-#endif
+eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio);
 
-#ifndef EB_STACK_SIZE
-#define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
-#endif
+uint32_t eb_get_tick(void);
 
-#ifndef EB_PRIO
-#define EB_PRIO                     (tskIDLE_PRIORITY + 1)
-#endif
+int32_t eb_timer_new(eb_timer_t *timer, const char *name, uint32_t timeout_ms, void (*cb)(void *arg), void *arg);
+int32_t eb_timer_start(eb_timer_t *timer);
+int32_t eb_timer_stop(eb_timer_t *timer);
+int32_t eb_timer_delete(eb_timer_t *timer);
 
-#ifndef EB_WORKER_STACK_SIZE
-#define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
-#endif
-
-#ifndef EB_WORKER_PRIO
-#define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
-#endif
-
-#ifndef EB_WORKER_MAX_NAME_LEN
-#define EB_WORKER_MAX_NAME_LEN     (16)
-#endif
-
-#ifndef EB_SUPV_MAX_TIMER
-#define EB_SUPV_MAX_TIMER          (4)
-#endif
-
-#ifndef EB_MAX_SUB_LATENCY_MS
-#define EB_MAX_SUB_LATENCY_MS      (100)
-#endif
-
-#ifndef EB_SUB_NAME_MAX_LEN
-#define EB_SUB_NAME_MAX_LEN        (16)
-#endif
-
-#ifndef EB_STAT_HIST_DEPTH
-#define EB_STAT_HIST_DEPTH         (4)
-#endif
-
-#ifndef EB_USE_CUSTOM_EVT
-#endif
-
-#ifndef EB_WORKER_EXIT_STATUS   
-#define EB_WORKER_EXIT_STATUS       0
-#endif
-
-#ifndef MIN 
-#define MIN(a,b)                   (a > b ? b : a)
-#endif
-
-#ifndef eb_log_trace
-#define eb_log_trace(...)
-#endif
-
-#ifndef eb_log_warn
-#define eb_log_warn(...)
-#endif
-
-#ifndef eb_log_err
-#define eb_log_err(...)
-#endif
-
-#ifndef eb_log_evt
-#define eb_log_evt(...)
-#endif
-
-#ifndef eb_get_tick_count
-#define eb_get_tick_count
-#endif
-
-#endif // __EVENT_BUS_DFLT_CFG_H__
+#endif //__EB_PORT_H__
