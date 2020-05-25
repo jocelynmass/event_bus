@@ -67,6 +67,11 @@ eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg
 	return ret;
 }
 
+void eb_thread_delete(eb_thread_t thread)
+{
+    vTaskDelete(thread);
+}
+
 uint32_t eb_get_tick(void)
 {
     return xTaskGetTickCount();

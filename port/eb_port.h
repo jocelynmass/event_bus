@@ -55,6 +55,7 @@ int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout);
 int32_t eb_mutex_give(eb_mutex_t *mutex);
 
 eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio);
+void eb_thread_delete(eb_thread_t thread);
 
 uint32_t eb_get_tick(void);
 

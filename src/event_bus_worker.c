@@ -112,14 +112,15 @@ static void eb_worker_thread(void *arg)
     }
 
 exit:
-    worker->thread_hdl = 0;
 
     if(msg->data)
     {
         free(msg->data);
     }
+
+    eb_thread_delete(worker->thread_hdl);
     memset(worker->name, 0, sizeof(worker->name));
-    memset(worker, 0, sizeof(struct eb_worker));
+    memset(worker, 0, sizeof(struct eb_worker)); 
 }
 
 int32_t eb_worker_init(struct eb_ctx *bus)
