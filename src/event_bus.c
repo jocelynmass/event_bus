@@ -34,18 +34,18 @@
 
 static int32_t eb_lock(struct eb_ctx *bus)
 {
-    if(eb_mutex_take(&bus->p_mutex, 500))
-        return 0;
+    if(eb_mutex_take(&bus->mutex, 500))
+        return -1;
     
-    return -1;
+    return 0;
 }
 
 static int32_t eb_unlock(struct eb_ctx *bus)
 {
-    if(eb_mutex_give(&bus->p_mutex))
-        return 0;
-    
-    return -1;
+    if(eb_mutex_give(&bus->mutex))
+        return -1;;
+
+    return 0;
 }
 
 static struct eb_evt *eb_search_event(struct eb_ctx *bus, uint32_t event_id)
@@ -191,12 +191,12 @@ int32_t eb_init(struct eb_ctx *bus, void *app_ctx)
 {
     bus->nb_evt = 0;
     bus->app_ctx = app_ctx;
-
-    eb_mutex_new(&bus->p_mutex);
+    
+    eb_mutex_new(&bus->mutex);
     memset(bus->events, 0, sizeof(bus->events));
     memset(&bus->all_sub, 0, sizeof(bus->all_sub));
 
-    if(eb_worker_init(bus) || bus->p_mutex == NULL)
+    if(eb_worker_init(bus) || bus->mutex == NULL)
         return EVT_WORKER_ERR;
 
     eb_log_trace("init done\n");

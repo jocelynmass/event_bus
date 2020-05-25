@@ -73,7 +73,7 @@ struct eb_ctx
     uint32_t nb_evt;
     struct eb_evt events[MAX_NB_EVENTS];
     struct eb_sub all_sub;
-    eb_mutex_t p_mutex;
+    eb_mutex_t mutex;
     void *app_ctx;
 };
 

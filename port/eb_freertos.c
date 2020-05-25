@@ -42,10 +42,10 @@ int32_t eb_mutex_new(eb_mutex_t *mutex)
 
 int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout)
 {
-   if(xSemaphoreTake(*mutex, timeout) != pdPASS)
-   		return -1;
+   if(xSemaphoreTake(*mutex, timeout) == pdTRUE)
+   		return 0;
 
-    return 0;
+    return -1;
 }
 
 int32_t eb_mutex_give(eb_mutex_t *mutex)
