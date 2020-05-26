@@ -80,7 +80,7 @@ void eb_stats_print(void)
     uint32_t i;
 
 	printf("----> event bus stats:\n");
-    printf("\t - version = %d.%d\n", EVENT_BUS_MAJOR_REV, EVENT_BUS_MINOR_REV);
+    printf("\t - version = %d.%d.%d\n", EVENT_BUS_MAJOR_REV, EVENT_BUS_MINOR_REV, EVENT_BUS_PATCH);
     printf("\t - latency min = %ld ms\n", stats.lat_min);
     printf("\t - latency max = %ld ms\n", stats.lat_max);
 	printf("\t - average latency = %ld ms\n", stats.lat_avg);
