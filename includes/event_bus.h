@@ -39,9 +39,10 @@
 #include "event_bus_err.h"
 #include "eb_port.h"
 
-// Version 2.1
+// Version 2.1.0
 #define EVENT_BUS_MAJOR_REV     2
 #define EVENT_BUS_MINOR_REV     1
+#define EVENT_BUS_PATCH         0
 
 typedef int32_t (eb_sub_cb_t)(void *app_ctx, uint32_t event_id, void *data, uint32_t len, void *arg);
 
