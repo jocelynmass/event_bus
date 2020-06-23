@@ -162,6 +162,7 @@ int32_t eb_worker_process(struct eb_ctx *bus, struct eb_evt *evt, uint8_t index,
     if(len > 0)
     {
         worker->params.msg.data = malloc(len); //TODO: replace by a mempool alloc
+        worker->params.msg.len = len;
         if(worker->params.msg.data == NULL)
         {
             eb_log_err("data alloc failed for event id 0x%lx\n", evt->id);
