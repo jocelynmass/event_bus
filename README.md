@@ -6,15 +6,13 @@ Event publisher/subscriber library allowing to reduce code dependencies. Events 
 
 # Init
 
-- Define event in event_bus_cstm.h (to be placed in your project directory)
+- Define event, an event is a uint32_t
 
 ```c
-#include "event_bus_def.h"
-
-enum event_bus_cstm_id
+enum event_bus_id
 {
-    EB_CUSTOM_EVT1 = EB_CUSTOM_OFFSET,
-    EB_CUSTOM_EVT2,
+    EB_EVT1 = 0,
+    EB_EVT2,
 };
 ```
 
@@ -51,7 +49,7 @@ static int32_t custom_evt1_sub(void *app_ctx, uint32_t event_id, void *data, uin
 
 void foo(void)
 {
-    eb_sub_direct(&ebus, "custom_evt1", EB_CUSTOM_EVT1, NULL, custom_evt1_sub);
+    eb_sub_direct(&ebus, "custom_evt1", EB_EVT1, NULL, custom_evt1_sub);
 }
 ```
 
@@ -60,7 +58,7 @@ void foo(void)
 ```c
 void foo(void)
 {
-    eb_pub(&ebus, EB_CUSTOM_EVT1, NULL, 0);
+    eb_pub(&ebus, EB_EVT1, NULL, 0);
 }
 
 ```
@@ -84,7 +82,7 @@ static int32_t custom_evt1_sub(void *app_ctx, uint32_t event_id, void *data, uin
 
 void foo(void)
 {
-    eb_sub_indirect(&ebus, "custom_evt1", EB_CUSTOM_EVT1, NULL, custom_evt1_sub);
+    eb_sub_indirect(&ebus, "custom_evt1", EB_EVT1, NULL, custom_evt1_sub);
 }
 ```
 
@@ -93,7 +91,7 @@ void foo(void)
 ```c
 void foo(void)
 {
-    eb_pub(&ebus, EB_CUSTOM_EVT1, NULL, 0);
+    eb_pub(&ebus, EB_EVT1, NULL, 0);
 }
 
 ```
