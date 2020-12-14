@@ -27,18 +27,35 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # WITH THE SOFTWARE.
 
+add_library(event-bus INTERFACE)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/includes)
+target_compile_definitions(event-bus
+        INTERFACE
+            LIB_EVENT_BUS=1
+)
 
-IF(USE_FREERTOS)
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/port)
-    SET(LIB_SRC "${LIB_SRC}"
-        "${CMAKE_CURRENT_LIST_DIR}/port/eb_freertos.c")
-ENDIF()
+set(EB_INC ${EB_INC} 
+    "${CMAKE_CURRENT_LIST_DIR}/includes"
+    "${CMAKE_CURRENT_LIST_DIR}/port"
+)
 
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DLIB_EVENT_BUS")
-SET(LIB_SRC "${LIB_SRC}"
+if(USE_FREERTOS)
+    set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/eb_freertos.c")
+endif()
+
+set(EB_SRC ${EB_SRC}
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_worker.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_supv.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_stats.c")
+    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_stats.c"
+)
+
+target_include_directories(event-bus
+    INTERFACE
+        ${EB_INC}
+)
+
+target_sources(event-bus
+    INTERFACE
+        ${EB_SRC}
+)
