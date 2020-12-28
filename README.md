@@ -2,7 +2,7 @@
 
 
 
-Event publisher/subscriber library allowing to reduce code dependencies. Events can be run inside the caller thread or in a dedicated thread, depending of the subscriber settings.
+Event publisher/subscriber library allowing to reduce code dependencies. Events can be executed inside the caller thread or in a dedicated thread, depending of the subscriber settings.
 
 # Init
 
@@ -65,7 +65,7 @@ void foo(void)
 
 # Indirect API
 
-This API allows to indirectly notify subscribers. Event Bus will create a thread in which the subscribers will be called. In a case a subscriber would take too much time to be executed, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). Priority based subscribers feature will be released soon.
+This API allows to indirectly notify subscribers. Event Bus will create a thread in which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). Priority based subscribers will be released soon.
 
 ![Direct API Diagram](docs/eb_indirect.svg)
 
