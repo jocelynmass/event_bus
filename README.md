@@ -2,7 +2,7 @@
 
 
 
-Event publisher/subscriber library allowing to reduce code dependencies. Events can be executed inside the caller thread or in a dedicated thread, depending of the subscriber settings.
+Event publisher/subscriber library allowing to reduce code dependencies. Events can be executed from the caller thread or from a dedicated thread, depending of the subscriber settings.
 
 # Init
 
@@ -32,7 +32,7 @@ void main(void)
 
 # Direct API
 
-This API allows to directly notify subscribers inside the publisher context. Subscribers will be notified sequentially, meaning timely critical calls can't be ensured as one subscriber can prevent the others to be executed.
+This API allows to directly notify subscribers from the publisher context. Subscribers will be notified sequentially, meaning timely critical calls can't be ensured as one subscriber can prevent the others to be executed.
 
 ![Direct API Diagram](docs/eb_direct.svg)
 
@@ -47,7 +47,7 @@ static int32_t custom_evt1_sub(void *app_ctx, uint32_t event_id, void *data, uin
     return 0;
 }
 
-void foo(void)
+void foo_sub(void)
 {
     eb_sub_direct(&ebus, "custom_evt1", EB_EVT1, NULL, custom_evt1_sub);
 }
@@ -56,7 +56,7 @@ void foo(void)
 - Create a publisher
 
 ```c
-void foo(void)
+void foo_pub(void)
 {
     eb_pub(&ebus, EB_EVT1, NULL, 0);
 }
@@ -65,7 +65,7 @@ void foo(void)
 
 # Indirect API
 
-This API allows to indirectly notify subscribers. Event Bus will create a thread in which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). Priority based subscribers will be released soon.
+This API allows to indirectly notify subscribers. Event Bus will create a thread from which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). Priority based subscribers will be released soon.
 
 ![Direct API Diagram](docs/eb_indirect.svg)
 
@@ -80,7 +80,7 @@ static int32_t custom_evt1_sub(void *app_ctx, uint32_t event_id, void *data, uin
     return 0;
 }
 
-void foo(void)
+void foo_sub(void)
 {
     eb_sub_indirect(&ebus, "custom_evt1", EB_EVT1, NULL, custom_evt1_sub);
 }
@@ -89,7 +89,7 @@ void foo(void)
 - Create a publisher
 
 ```c
-void foo(void)
+void foo_pub(void)
 {
     eb_pub(&ebus, EB_EVT1, NULL, 0);
 }
