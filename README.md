@@ -65,11 +65,8 @@ void foo_pub(void)
 
 # Indirect API
 
-<<<<<<< HEAD
-This API allows to indirectly notify subscribers. Event Bus will create a thread from which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). Priority based subscribers will be released soon.
-=======
-This API allows to indirectly notify subscribers. Event Bus will create a thread in which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). eb_pub API now takes a priority flag. It can either be low or high priority. Event published as high priority will take over any other events already queued to event bus.
->>>>>>> cdff05c (Update readme)
+This API allows to indirectly notify subscribers. Event Bus will create a thread from which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). eb_pub API now takes a priority flag. It can either be low or high priority. Event published as high priority will take over any other events already queued to event bus.
+
 
 ![Direct API Diagram](docs/eb_indirect.svg)
 
