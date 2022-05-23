@@ -31,6 +31,7 @@
 #ifndef __EVENT_BUS_DFLT_CFG_H__
 #define __EVENT_BUS_DFLT_CFG_H__
 
+#include "eb_port.h"
 #include "event_bus_cfg.h"
 
 #ifndef MAX_NB_EVENTS
@@ -50,19 +51,35 @@
 #endif
 
 #ifndef EB_STACK_SIZE
-#define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
+#error "EB_STACK_SIZE must be set"
 #endif
 
 #ifndef EB_PRIO
-#define EB_PRIO                     (tskIDLE_PRIORITY + 1)
+#error "EB_STACK_SIZE must be set"
 #endif
 
 #ifndef EB_WORKER_STACK_SIZE
-#define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
+#error "EB_WORKER_STACK_SIZE must be set"
 #endif
 
 #ifndef EB_WORKER_PRIO
-#define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
+#error "EB_WORKER_PRIO must be set"
+#endif
+
+#ifndef EB_QUEUE_PERIOD
+#define EB_QUEUE_PERIOD            (50)
+#endif
+
+#ifndef EB_WORKER_QUEUE_PERIOD
+#define EB_WORKER_QUEUE_PERIOD     (2000)
+#endif
+
+#ifndef EB_PUBLISH_TIMEOUT
+#define EB_PUBLISH_TIMEOUT         (200)
+#endif
+
+#ifndef EB_QUEUE_LEN
+#define EB_QUEUE_LEN               (16)
 #endif
 
 #ifndef EB_WORKER_MAX_NAME_LEN

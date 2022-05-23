@@ -39,51 +39,55 @@
 #include "event_bus_err.h"
 #include "eb_port.h"
 
-// Version 2.1.0
-#define EVENT_BUS_MAJOR_REV     2
-#define EVENT_BUS_MINOR_REV     1
+// Version 3.0.0
+#define EVENT_BUS_MAJOR_REV     3
+#define EVENT_BUS_MINOR_REV     0
 #define EVENT_BUS_PATCH         0
+
+#define EVENT_BUS_LOW_PRIO      0
+#define EVENT_BUS_HIGH_PRIO     1
 
 typedef int32_t (eb_sub_cb_t)(void *app_ctx, uint32_t event_id, void *data, uint32_t len, void *arg);
 
 
-struct eb_sub
+typedef struct eb_sub_t
 {
     char name[EB_SUB_NAME_MAX_LEN];
     void *arg;
     bool direct;
     eb_sub_cb_t *cb;
-};
+}eb_sub_t;
 
-struct eb_evt
+typedef struct eb_evt_t
 {
     uint32_t id;
     uint32_t nb_sub;
-    struct eb_sub subs[MAX_NB_SUBSCRIBERS];
-};
+    eb_sub_t subs[MAX_NB_SUBSCRIBERS];
+}eb_evt_t;
 
-struct eb_msg
+typedef struct eb_msg_t
 {
-    struct eb_evt *evt;
+    eb_evt_t *evt;
     uint32_t len;
     void *data;
-};
+}eb_msg_t;
 
-struct eb_ctx
+typedef struct eb_t
 {
     uint32_t nb_evt;
-    struct eb_evt events[MAX_NB_EVENTS];
-    struct eb_sub all_sub;
+    eb_evt_t events[MAX_NB_EVENTS];
+    eb_sub_t all_sub;
     eb_mutex_t mutex;
+    eb_queue_t queue;
     void *app_ctx;
-};
+}eb_t;
 
-int32_t eb_init(struct eb_ctx *bus, void *app_ctx);
-int32_t eb_unsub(struct eb_ctx *bus, uint32_t event_id, eb_sub_cb_t *cb);
-int32_t eb_sub_direct(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
-int32_t eb_sub_indirect(struct eb_ctx *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
-int32_t eb_sub_all_direct(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb);
-int32_t eb_sub_all_indirect(struct eb_ctx *bus, void *arg, eb_sub_cb_t *cb);
-int32_t eb_pub(struct eb_ctx *bus, uint32_t event_id, void *data, uint32_t len);
+int32_t eb_init(eb_t *bus, void *app_ctx);
+int32_t eb_unsub(eb_t *bus, uint32_t event_id, eb_sub_cb_t *cb);
+int32_t eb_sub_direct(eb_t *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_indirect(eb_t *bus, const char *name, uint32_t event_id, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_all_direct(eb_t *bus, void *arg, eb_sub_cb_t *cb);
+int32_t eb_sub_all_indirect(eb_t *bus, void *arg, eb_sub_cb_t *cb);
+int32_t eb_pub(eb_t *bus, uint32_t event_id, void *data, uint32_t len, uint32_t prio);
 
 #endif // __EVENT_BUS_H__

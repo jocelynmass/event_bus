@@ -33,24 +33,24 @@
 
 #include "event_bus.h"
 
-struct eb_hist
+typedef struct eb_hist_t
 {
     char name[EB_SUB_NAME_MAX_LEN];
     uint32_t event_id;
     uint32_t lat;
-};
+}eb_hist_t;
 
-struct eb_stats
+typedef struct eb_stats_t
 {
     uint32_t lat_min;
     uint32_t lat_avg;
     uint32_t lat_max;
     uint32_t index;
     char lat_max_name[EB_SUB_NAME_MAX_LEN];
-};
+}eb_stats_t;
 
-int32_t eb_stats_init(struct eb_ctx *bus);
-int32_t eb_stats_add(struct eb_ctx *bus, const char *name, uint32_t event_id, uint32_t latency);
+int32_t eb_stats_init(eb_t *bus);
+int32_t eb_stats_add(eb_t *bus, const char *name, uint32_t event_id, uint32_t latency);
 void eb_stats_print(void);
 
 #endif // __EVENT_BUS_STATS_H__

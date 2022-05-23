@@ -34,7 +34,7 @@
 #include "event_bus.h"
 #include "event_bus_worker.h"
 
-int32_t eb_supv_start(struct eb_worker *worker, void (* timeout_cb)(void *arg));
-int32_t eb_supv_stop(struct eb_worker *worker);
+void eb_supv_start(eb_worker_t *worker);
+void eb_supv_run(void);
 
 #endif // __EVENT_SUPERVISOR_H__

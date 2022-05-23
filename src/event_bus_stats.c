@@ -30,18 +30,18 @@
 
 #include "event_bus_stats.h"
 
-static struct eb_hist stat_hist[EB_STAT_HIST_DEPTH];
-static struct eb_stats stats;
+static eb_hist_t stat_hist[EB_STAT_HIST_DEPTH];
+static eb_stats_t stats;
 
-int32_t eb_stats_init(struct eb_ctx *bus)
+int32_t eb_stats_init(eb_t *bus)
 {
-    memset(&stats, 0, sizeof(struct eb_stats));
-    memset(stat_hist, 0, sizeof(struct eb_hist)*EB_STAT_HIST_DEPTH);
+    memset(&stats, 0, sizeof(eb_stats_t));
+    memset(stat_hist, 0, sizeof(eb_hist_t)*EB_STAT_HIST_DEPTH);
 
     return 0;
 }
 
-int32_t eb_stats_add(struct eb_ctx *bus, const char *name, uint32_t event_id, uint32_t latency)
+int32_t eb_stats_add(eb_t *bus, const char *name, uint32_t event_id, uint32_t latency)
 {
     strcpy((char *)stat_hist[stats.index].name, name);
     stat_hist[stats.index].lat = latency;

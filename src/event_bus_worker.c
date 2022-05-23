@@ -33,38 +33,64 @@
 #include "event_bus_supv.h"
 #include "event_bus_stats.h"
 
-static struct eb_worker workers[MAX_NB_WORKERS];
+static eb_worker_t workers[MAX_NB_WORKERS];
 
-static void eb_worker_thread(void *arg);
-static struct eb_worker *eb_worker_get(uint32_t *id);
-static void eb_worker_timeout(void *arg);
-
-static void eb_worker_timeout(void *arg)
+void eb_worker_timeout(eb_worker_t *worker)
 {
-    struct eb_worker *worker;
-    struct eb_ctx *bus; 
-    struct eb_msg *msg; 
-    struct eb_evt *evt;
-
-    worker = (struct eb_worker *)arg;
-    worker->index++;
-    worker->canceled = true;
-    bus = worker->params.bus;
-    msg = &worker->params.msg;
-    evt = msg->evt;
-
-    if(evt->nb_sub > worker->index)
-    {
-        eb_worker_process(bus, msg->evt, worker->index, msg->data, msg->len);
+    worker->cancelled = true;
+    if(worker->msg.evt->nb_sub > worker->index){
+        eb_log_warn("worker timeout, defer event id %x to a new worker\n");
+        eb_worker_post(worker->bus, worker->msg.evt, worker->index, worker->msg.data, worker->msg.len);
     }
 }
 
-static struct eb_worker *eb_worker_get(uint32_t *id)
+static void eb_worker_thread(void *arg)
 {
-    for(*id = 0 ; *id < MAX_NB_WORKERS ; (*id)++)
-    {
-        if(workers[*id].thread_hdl == 0)
-        {
+    eb_worker_t *worker = (eb_worker_t *)arg;
+    eb_t *bus = worker->bus;
+    eb_msg_t msg;
+    eb_sub_t *sub;
+    uint32_t i = 0;
+
+    while(1){
+        if(eb_queue_get(&worker->queue, &msg, EB_WORKER_QUEUE_PERIOD) == 0){
+            worker->running = true;
+            worker->cancelled = false;
+            worker->msg.evt = msg.evt;
+            worker->msg.data = msg.data;
+            worker->msg.len = msg.len;
+
+            // Call all sub first
+            if(!bus->all_sub.direct && worker->index == 0){
+                eb_worker_exec(bus, &bus->all_sub, msg.evt->id, msg.data, msg.len);
+            }
+
+            for(i = worker->index ; i < msg.evt->nb_sub ; i++){
+                sub = &msg.evt->subs[i];
+                if(!sub->direct){
+                    eb_supv_start(worker);
+                    worker->index++;
+                    eb_worker_exec(worker->bus, sub, msg.evt->id, msg.data, msg.len);
+                    if(worker->cancelled){
+                        // worker has been cancelled, exit running state
+                        break;
+                    }
+                }
+            }
+
+            // don't free data just yet in the case worker has been cancelled
+            if(msg.data && !worker->cancelled){
+                eb_free(msg.data);
+            }
+            worker->running = false;
+        }
+    }
+}
+
+static eb_worker_t *eb_worker_get(uint32_t *id)
+{
+    for(*id = 0 ; *id < MAX_NB_WORKERS ; (*id)++){
+        if(!workers[*id].running){
             return &workers[*id];
         }
     }
@@ -72,112 +98,67 @@ static struct eb_worker *eb_worker_get(uint32_t *id)
     return NULL;
 }
 
-static void eb_worker_thread(void *arg)
-{
-    struct eb_worker *worker = (struct eb_worker *)arg;
-    struct eb_ctx *bus = worker->params.bus;
-    struct eb_msg *msg = &worker->params.msg;
-    struct eb_evt *evt = msg->evt;
-    struct eb_sub *sub;
-    uint32_t i;
-
-    // Call all sub first
-    sub = &bus->all_sub;
-
-    if((sub->direct == false) && (sub->cb) && (worker->index == 0))
-    {
-        eb_worker_exec(bus, sub, evt->id, msg->data, msg->len);
-    }
-    
-    for(i = worker->index ; i < evt->nb_sub ; i++)
-    {
-        sub = &evt->subs[i];
-        
-        if(sub->direct == false && sub->cb)
-        {
-            if(eb_supv_start(worker, eb_worker_timeout))
-            {
-                eb_log_warn("supervisor failed to start, no exec optimization available\n");
-            }
-
-            eb_worker_exec(bus, sub, evt->id, msg->data, msg->len);
-            eb_supv_stop(worker);
-
-            if(worker->canceled)
-            {
-                eb_log_trace("worker has been canceled\n");
-                goto exit;
-            }
-        }
-    }
-
-exit:
-
-    if(msg->data)
-    {
-        free(msg->data);
-    }
-
-    eb_thread_delete(worker->thread_hdl);
-    memset(worker->name, 0, sizeof(worker->name));
-    memset(worker, 0, sizeof(struct eb_worker)); 
-}
-
-int32_t eb_worker_init(struct eb_ctx *bus)
-{
-    memset(workers, 0, sizeof(workers));
-    return 0;
-}
-
-int32_t eb_worker_exec(struct eb_ctx *bus, struct eb_sub *sub, uint32_t event_id, void *data, uint32_t len)
+int32_t eb_worker_exec(eb_t *bus, eb_sub_t *sub, uint32_t event_id, void *data, uint32_t len)
 {
     uint32_t latency = 0;
 
     latency = eb_get_tick();
-    sub->cb(bus->app_ctx, event_id, data, len, sub->arg);
+    if(sub->cb){
+        sub->cb(bus->app_ctx, event_id, data, len, sub->arg);
+    }
     latency = eb_get_tick() - latency;
     eb_stats_add(bus, sub->name, event_id, latency);
 
     return 0;
 }
 
-int32_t eb_worker_process(struct eb_ctx *bus, struct eb_evt *evt, uint8_t index, void *data, uint32_t len)
+int32_t eb_worker_post(eb_t *bus, eb_evt_t *evt, uint8_t index, void *data, uint32_t len)
 {
     uint32_t id = 0;
-    struct eb_worker *worker;
+    eb_worker_t *worker;
+    eb_msg_t msg;
+    int32_t rc = EVT_WORKER_ERR;
 
     worker = eb_worker_get(&id);
-
-    if(worker == NULL)
-    {
+    if(worker == NULL){
         eb_log_err("no workers available, drop event id 0x%lx\n", evt->id);
-        return -1;
+        goto exit;
     }
 
-    sprintf(worker->name, "wkr_%ld_th", id);
-    worker->params.bus = bus;
-    worker->params.msg.evt = evt;
+    worker->bus = bus;
     worker->index = index;
+    sprintf(worker->name, "wkr_%ld_th", id);
 
-    if(len > 0)
-    {
-        worker->params.msg.data = malloc(len); //TODO: replace by a mempool alloc
-        worker->params.msg.len = len;
-        if(worker->params.msg.data == NULL)
-        {
-            eb_log_err("data alloc failed for event id 0x%lx\n", evt->id);
-            return -1;
+    if(worker->thread == NULL){
+        if(eb_queue_new(&worker->queue, sizeof(eb_msg_t), 1)){
+            eb_log_err("%s queue failed\n", worker->name);
+            goto exit;
         }
-        memcpy(worker->params.msg.data, data, len);
+        worker->thread = eb_thread_new(worker->name, eb_worker_thread, (void *)worker, EB_WORKER_STACK_SIZE, EB_WORKER_PRIO);
+        if(worker->thread == NULL){
+            eb_log_err("%s failed\n", worker->name);
+            eb_queue_delete(&worker->queue);
+            goto exit;
+        }
     }
 
-    worker->thread_hdl = eb_thread_new(worker->name, eb_worker_thread, (void *)worker, EB_WORKER_STACK_SIZE, EB_WORKER_PRIO);
+    msg.evt = evt;
+    msg.len = len;
+    msg.data = data;
 
-    if(worker->thread_hdl == NULL)
-    {
-        eb_log_err("%s failed\n", worker->name);
-        return -1;
-    }
+    eb_queue_push(&worker->queue, (void *)&msg, EVENT_BUS_LOW_PRIO, 100);
 
+exit:
+    return rc;
+}   
+
+eb_worker_t *eb_worker_get_list(void)
+{
+    return workers;
+}
+
+int32_t eb_worker_init(eb_t *bus)
+{
+    memset(workers, 0, sizeof(workers));
     return 0;
 }

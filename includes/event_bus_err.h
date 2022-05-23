@@ -37,8 +37,11 @@ enum eb_err_list
     EVT_BUS_MEM_ERR = -1,
     EVT_BUS_THREAD_ERR = -2,
     EVT_BUS_QUEUE_ERR = -3,
-    EVT_WORKER_ERR = -4,
-    EVT_BUS_LOCK_ERR = -5,
+    EVT_BUS_MUTEX_ERR = -4,
+    EVT_WORKER_ERR = -5,
+    EVT_BUS_LOCK_ERR = -6,
+    EVT_BUS_ALLOC_ERR = -7,
+    EVT_BUS_PUB_ERR = -8,
 };
 
 #endif // __EVENT_BUS_ERROR_H__
