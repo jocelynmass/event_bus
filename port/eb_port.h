@@ -38,17 +38,21 @@
 #include "timers.h"
 #include "semphr.h"
 
+#define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
+#define EB_PRIO                     (tskIDLE_PRIORITY + 2)
+#define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
+#define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
+
+typedef QueueHandle_t eb_queue_t;
 typedef SemaphoreHandle_t eb_mutex_t;
 typedef TaskHandle_t eb_thread_t;
-typedef struct eb_timer_t
-{
-    TimerHandle_t hdl;
-    void *arg;
-    void (*cb)(void *arg);
-}eb_timer_t;
 
 #endif
 
+int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length);
+int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout);
+int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout);
+int32_t eb_queue_delete(eb_queue_t *queue);
 
 int32_t eb_mutex_new(eb_mutex_t *mutex);
 int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout);
@@ -59,9 +63,7 @@ void eb_thread_delete(eb_thread_t thread);
 
 uint32_t eb_get_tick(void);
 
-int32_t eb_timer_new(eb_timer_t *timer, const char *name, uint32_t timeout_ms, void (*cb)(void *arg), void *arg);
-int32_t eb_timer_start(eb_timer_t *timer);
-int32_t eb_timer_stop(eb_timer_t *timer);
-int32_t eb_timer_delete(eb_timer_t *timer);
+void *eb_malloc(size_t len);
+void eb_free(void *pmem);
 
 #endif //__EB_PORT_H__

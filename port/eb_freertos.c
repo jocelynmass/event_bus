@@ -29,6 +29,7 @@
  */
 
 #include "eb_port.h"
+#include "event_bus.h"
 
 int32_t eb_mutex_new(eb_mutex_t *mutex)
 {
@@ -42,9 +43,17 @@ int32_t eb_mutex_new(eb_mutex_t *mutex)
 
 int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout)
 {
-   if(xSemaphoreTake(*mutex, timeout) == pdTRUE)
-   		return 0;
 
+    if(mcu_in_isr){
+        if(xSemaphoreTakeFromISR(*mutex, NULL) == pdTRUE){
+            return 0;
+        }
+    }else{
+        if(xSemaphoreTake(*mutex, timeout) == pdTRUE){
+   		    return 0;
+        }
+    }
+    
     return -1;
 }
 
@@ -52,6 +61,58 @@ int32_t eb_mutex_give(eb_mutex_t *mutex)
 {
    	xSemaphoreGive(*mutex);
 
+    return 0;
+}
+
+int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length)
+{
+    *queue = xQueueCreate(length, item_size);
+   	
+   	if(*queue == NULL)
+   		return -1;
+
+    return 0;
+}
+
+int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout)
+{
+    if(prio == EVENT_BUS_HIGH_PRIO){
+        if(mcu_in_isr){
+            if(xQueueSendToFront(*queue, item, timeout) == pdTRUE){
+                return 0;
+            }
+        }else{
+            if(xQueueSendToFrontFromISR(*queue, item, NULL) == pdTRUE){
+                return 0;
+            }
+        }
+    }else{
+        if(mcu_in_isr){
+            if(xQueueSendToBack(*queue, item, timeout) == pdTRUE){
+                return 0;
+            }
+        }else{
+            if(xQueueSendToBackFromISR(*queue, item, NULL) == pdTRUE){
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout)
+{
+    if(xQueueReceive(*queue, item, timeout) == pdPASS){
+        return 0;
+    }
+    return -1;
+}
+
+int32_t eb_queue_delete(eb_queue_t *queue)
+{
+    if(queue){
+        vQueueDelete(queue);
+    }
     return 0;
 }
 
@@ -77,55 +138,12 @@ uint32_t eb_get_tick(void)
     return xTaskGetTickCount();
 }
 
-static void eb_timer_cb(TimerHandle_t xTimer)
+void *eb_malloc(size_t len)
 {
-    eb_timer_t *timer;
-
-    // pvTimerGetTimerID return a pointer on the current running worker
-    // This worker is taking to much time to proceed so we start a new worker
-    // We need to ensure the current worker won't call the subscribers again when
-    // the current callback will be completed. To do so we set the worker as canceled
-
-    timer = (eb_timer_t *)pvTimerGetTimerID(xTimer);
-
-    if(timer->cb)
-    {
-        timer->cb(timer->arg);
-    }
+    return pvPortMalloc(len);
 }
 
-int32_t eb_timer_new(eb_timer_t *timer, const char *name, uint32_t timeout_ms, void (*cb)(void *arg), void *arg)
+void eb_free(void *pmem)
 {
-    timer->cb = cb;
-    timer->arg = arg;
-    timer->hdl = xTimerCreate(name, timeout_ms, pdFALSE, (void *)timer, eb_timer_cb);
-
-    if(timer->hdl == NULL)
-        return -1;
-
-    return 0;
-}
-
-int32_t eb_timer_start(eb_timer_t *timer)
-{
-    xTimerStart(timer->hdl, 0);
-
-    return 0;
-}
-
-int32_t eb_timer_stop(eb_timer_t *timer)
-{
-    xTimerStop(timer->hdl, 0);
-
-    return 0;
-}
-
-int32_t eb_timer_delete(eb_timer_t *timer)
-{
-    xTimerDelete(timer->hdl, 0);
-    timer->hdl = NULL;
-    timer->arg = NULL;
-    timer->cb = NULL;
-
-    return 0;
+    vPortFree(pmem);
 }
