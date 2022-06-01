@@ -2,7 +2,7 @@
 
 
 
-Event publisher/subscriber library allowing to reduce code dependencies. Events can be executed from the caller thread or from a dedicated thread, depending of the subscriber settings.
+Event publisher/subscriber library allowing to reduce code dependencies. Events can be executed from the event bus thread or from a dedicated thread, depending of the subscriber settings.
 
 # Init
 
@@ -32,7 +32,7 @@ void main(void)
 
 # Direct API
 
-This API allows to directly notify subscribers from the publisher context. Subscribers will be notified sequentially, meaning timely critical calls can't be ensured as one subscriber can prevent the others to be executed.
+This API allows to directly notify subscribers from the event bus context. Subscribers will be notified sequentially, meaning timely critical calls can't be ensured as one subscriber can prevent the others to be executed.
 
 ![Direct API Diagram](docs/eb_direct.svg)
 
@@ -65,8 +65,7 @@ void foo_pub(void)
 
 # Indirect API
 
-This API allows to indirectly notify subscribers. Event Bus will create a thread from which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). eb_pub API now takes a priority flag. It can either be low or high priority. Event published as high priority will take over any other events already queued to event bus.
-
+This API allows to indirectly notify subscribers. Event Bus will create a thread from which the subscribers will be called. In a case a subscriber would consume too much CPU, the remaining subscribers would be defered to a new thread. This would ensure subscribers to be executed in a maximum known latency (EB_MAX_SUB_LATENCY_MS * number of subscribers). eb_pub API now takes a priority flag. It can either be low or high priority. Events published as high priority will take over any other events already queued to event bus.
 
 ![Direct API Diagram](docs/eb_indirect.svg)
 
