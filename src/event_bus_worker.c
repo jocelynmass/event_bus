@@ -57,8 +57,12 @@ static void eb_worker_thread(void *arg)
             worker->running = true;
             worker->cancelled = false;
             worker->msg.evt = msg.evt;
-            worker->msg.data = msg.data;
+            worker->msg.data = NULL;
             worker->msg.len = msg.len;
+
+            if(msg.len){
+                worker->msg.data = msg.data;
+            }
 
             // Call all sub first
             if(!bus->all_sub.direct && worker->index == 0){
@@ -79,8 +83,8 @@ static void eb_worker_thread(void *arg)
             }
 
             // don't free data just yet in the case worker has been cancelled
-            if(msg.data && !worker->cancelled){
-                eb_free(msg.data);
+            if(worker->msg.data && !worker->cancelled){
+                eb_free(worker->msg.data);
             }
             worker->running = false;
         }
