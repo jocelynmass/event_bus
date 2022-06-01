@@ -67,6 +67,7 @@ typedef struct eb_evt_t
 
 typedef struct eb_msg_t
 {
+    uint32_t evt_id;
     eb_evt_t *evt;
     uint32_t len;
     void *data;
