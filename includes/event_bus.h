@@ -71,6 +71,7 @@ typedef struct eb_msg_t
     eb_evt_t *evt;
     uint32_t len;
     void *data;
+    uint8_t retain;
 }eb_msg_t;
 
 typedef struct eb_t

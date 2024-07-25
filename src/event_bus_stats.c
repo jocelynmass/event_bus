@@ -32,6 +32,7 @@
 
 static eb_hist_t stat_hist[EB_STAT_HIST_DEPTH];
 static eb_stats_t stats;
+static uint32_t stat_total_evt = 0;
 
 int32_t eb_stats_init(eb_t *bus)
 {
@@ -43,6 +44,7 @@ int32_t eb_stats_init(eb_t *bus)
 
 int32_t eb_stats_add(eb_t *bus, const char *name, uint32_t event_id, uint32_t latency)
 {
+    stat_total_evt++;
     strcpy((char *)stat_hist[stats.index].name, name);
     stat_hist[stats.index].lat = latency;
     stat_hist[stats.index].event_id = event_id;
@@ -81,6 +83,7 @@ void eb_stats_print(void)
 
 	printf("----> event bus stats:\n");
     printf("\t - version = %d.%d.%d\n", EVENT_BUS_MAJOR_REV, EVENT_BUS_MINOR_REV, EVENT_BUS_PATCH);
+    printf("\t - nb event fired = %ld\n", stat_total_evt);
     printf("\t - latency min = %ld ms\n", stats.lat_min);
     printf("\t - latency max = %ld ms\n", stats.lat_max);
 	printf("\t - average latency = %ld ms\n", stats.lat_avg);

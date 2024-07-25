@@ -46,7 +46,7 @@ endif()
 set(EB_SRC ${EB_SRC}
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_worker.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_supv.c"
+    "${CMAKE_CURRENT_LIST_DIR}/src/eb_dispatcher.c"
     "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_stats.c"
 )
 

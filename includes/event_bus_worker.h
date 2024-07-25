@@ -36,20 +36,18 @@
 typedef struct eb_worker_t
 {
     char name[EB_WORKER_MAX_NAME_LEN];
+    uint8_t id;
     eb_t *bus;
-    eb_msg_t msg;
     eb_thread_t thread;
     eb_queue_t queue;
     uint32_t start_time;
-    uint32_t index;
+    uint8_t mem_retain;
     bool running;
-    bool cancelled;
-    bool timer_enabled;
 }eb_worker_t;
 
 int32_t eb_worker_init(eb_t *bus);
 int32_t eb_worker_exec(eb_t *bus, eb_sub_t *sub, uint32_t event_id, void *data, uint32_t len);
-int32_t eb_worker_post(eb_t *bus, eb_evt_t *evt, uint8_t index, void *data, uint32_t len);
-void eb_worker_timeout(eb_worker_t *worker);
+int32_t eb_worker_post(eb_t *bus, eb_worker_t *worker, eb_msg_t *msg);
+eb_worker_t *eb_worker_get(uint32_t id);
 
 #endif

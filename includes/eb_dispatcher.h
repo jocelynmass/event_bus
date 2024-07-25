@@ -28,13 +28,11 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EVENT_SUPERVISOR_H__
-#define __EVENT_SUPERVISOR_H__
+#ifndef __EVENT_DISPATCHER_H__
+#define __EVENT_WORK__EVENT_DISPATCHER_H__ER_H__
 
 #include "event_bus.h"
-#include "event_bus_worker.h"
 
-void eb_supv_start(eb_worker_t *worker);
-void eb_supv_run(void);
+int32_t eb_dispatch(eb_t *bus, eb_msg_t *msg, bool indirect);
 
-#endif // __EVENT_SUPERVISOR_H__
+#endif

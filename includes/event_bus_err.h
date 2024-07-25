@@ -42,6 +42,7 @@ enum eb_err_list
     EVT_BUS_LOCK_ERR = -6,
     EVT_BUS_ALLOC_ERR = -7,
     EVT_BUS_PUB_ERR = -8,
+    EVT_NULL_ERR = -9,
 };
 
 #endif // __EVENT_BUS_ERROR_H__

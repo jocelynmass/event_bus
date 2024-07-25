@@ -109,6 +109,10 @@
 #define EB_WORKER_EXIT_STATUS       0
 #endif
 
+#ifndef EB_WORKER_QUEUE_LEN  
+#define EB_WORKER_QUEUE_LEN         2
+#endif
+
 #ifndef MIN 
 #define MIN(a,b)                   (a > b ? b : a)
 #endif

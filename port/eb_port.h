@@ -52,6 +52,7 @@ typedef TaskHandle_t eb_thread_t;
 int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length);
 int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout);
 int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout);
+int32_t eb_queue_msg_waiting(eb_queue_t *queue);
 int32_t eb_queue_delete(eb_queue_t *queue);
 
 int32_t eb_mutex_new(eb_mutex_t *mutex);

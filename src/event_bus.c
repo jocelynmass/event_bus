@@ -31,11 +31,10 @@
 #include "event_bus.h"
 #include "event_bus_worker.h"
 #include "event_bus_stats.h"
+#include "eb_dispatcher.h"
 
 static eb_evt_t *eb_get_event(eb_t *bus, uint32_t event_id);
 static bool eb_has_indirect_sub(eb_t *bus, eb_evt_t *evt);
-static int32_t eb_publish_direct(eb_t *bus, eb_evt_t *evt, void *data, uint32_t len);
-static int32_t eb_publish_all(eb_t *bus, eb_evt_t *evt, uint32_t event_id, void *data, uint32_t len);
 
 static int32_t eb_lock(eb_t *bus)
 {
@@ -56,25 +55,17 @@ static int32_t eb_unlock(eb_t *bus)
 static void eb_thread(void *arg)
 {
     eb_t *bus = (eb_t *)arg;
-    eb_evt_t *evt;
-    eb_sub_t *sub;
     eb_msg_t msg;
+    int32_t rc = EVT_BUS_ERR_OK;
+    bool indirect = false;
 
     while(1){
         if(eb_queue_get(&bus->queue, &msg, EB_QUEUE_PERIOD) == 0){
-            evt = eb_get_event(bus, msg.evt_id);
-            msg.evt = evt;
-            if(evt != NULL){
-                if(eb_has_indirect_sub(bus, evt)){
-                    eb_worker_post(bus, msg.evt, 0, msg.data, msg.len);
-                }
-
-                eb_publish_direct(bus, msg.evt, msg.data, msg.len); 
-            }
-
-            eb_publish_all(bus, msg.evt, msg.evt_id, msg.data, msg.len);
+            msg.retain = 0;
+            msg.evt = eb_get_event(bus, msg.evt_id);
+            indirect = eb_has_indirect_sub(bus, msg.evt);
+            rc = eb_dispatch(bus, &msg, indirect);
         }
-        eb_supv_run();
     }
     
 }
@@ -88,7 +79,7 @@ static eb_evt_t *eb_get_event(eb_t *bus, uint32_t event_id)
             return &bus->events[i];
         }
     }
-
+    
     return NULL;
 }
 
@@ -168,75 +159,6 @@ static int32_t eb_subscribe_all(eb_t *bus, bool direct, void *arg, eb_sub_cb_t *
 
     eb_unlock(bus);
     return EVT_BUS_ERR_OK;
-}
-
-static int32_t eb_publish_direct(eb_t *bus, eb_evt_t *evt, void *data, uint32_t len)
-{
-    uint32_t i;
-    eb_sub_t *sub;
-
-    if(evt == NULL){
-        return EVT_BUS_PUB_ERR;
-    }
-
-    for(i = 0 ; i < evt->nb_sub ; i++){
-        sub = &evt->subs[i];
-
-        if(sub->direct && sub->cb){
-            eb_worker_exec(bus, sub, evt->id, data, len);
-        }
-    }
-
-    return EVT_BUS_ERR_OK;
-}
-
-static int32_t eb_publish(eb_t *bus, eb_evt_t *evt, void *data, uint32_t len, uint32_t prio)
-{
-    eb_msg_t msg;
-
-    msg.evt = evt;
-    msg.len = len;
-
-    if(len > 0){
-        msg.data = eb_malloc(len); //TODO: replace by a mempool alloc
-        if(msg.data == NULL){
-            eb_log_err("data alloc failed for event id 0x%lx\n", evt->id);
-            return EVT_BUS_ALLOC_ERR;
-        }
-        memcpy(msg.data, data, len);
-    }
-
-    if(eb_queue_push(&bus->queue, (void *)&msg, prio, EB_PUBLISH_TIMEOUT)){
-        if(msg.data){
-            eb_free(msg.data);
-        }
-        eb_log_err("failed to publish event id 0x%lx\n", evt->id);
-        return EVT_BUS_PUB_ERR;
-    }
-
-    return EVT_BUS_ERR_OK;
-}
-
-static int32_t eb_publish_all(eb_t *bus, eb_evt_t *evt, uint32_t event_id, void *data, uint32_t len)
-{
-    static eb_evt_t fake_evt;
-
-    if(bus->all_sub.direct){
-        eb_worker_exec(bus, &bus->all_sub, event_id, data, len);
-    }else{
-        // if evt == NULL this means we don't have any subscriber to this
-        // event. We still need to call the all_sub cb, to do so we need to 
-        // create a fake event with the current event id
-        if(evt == NULL){
-            memset(&fake_evt, 0, sizeof(fake_evt));
-            fake_evt.id = event_id;
-            fake_evt.nb_sub = 0;
-            evt = &fake_evt;
-        }
-
-        return eb_publish(bus, evt, data, len, EVENT_BUS_LOW_PRIO);
-    }
-    return 0;
 }
 
 static bool eb_has_indirect_sub(eb_t *bus, eb_evt_t *evt)
@@ -328,6 +250,7 @@ int32_t eb_pub(eb_t *bus, uint32_t event_id, void *data, uint32_t len, uint32_t 
     msg.evt_id = event_id;
     msg.evt = NULL;
     msg.len = len;
+    msg.data = NULL;
 
     if(msg.len > 0){
         msg.data = eb_malloc(len); //TODO: replace by a mempool alloc

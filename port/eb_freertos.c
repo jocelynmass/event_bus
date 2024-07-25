@@ -108,6 +108,11 @@ int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout)
     return -1;
 }
 
+int32_t eb_queue_msg_waiting(eb_queue_t *queue)
+{
+    return uxQueueMessagesWaiting(*queue);
+}
+
 int32_t eb_queue_delete(eb_queue_t *queue)
 {
     if(queue){
