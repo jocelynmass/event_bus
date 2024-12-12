@@ -103,4 +103,6 @@ err:
     if((msg->data) && (msg->retain == 0)){
         eb_free(msg->data);
     }
+
+    return rc;
 }

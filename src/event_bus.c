@@ -65,6 +65,10 @@ static void eb_thread(void *arg)
             msg.evt = eb_get_event(bus, msg.evt_id);
             indirect = eb_has_indirect_sub(bus, msg.evt);
             rc = eb_dispatch(bus, &msg, indirect);
+
+            if(rc){
+                eb_log_warn("dispatch error(%ld) for msg id = %lx\n", rc, msg.evt_id);
+            }
         }
     }
     
@@ -114,7 +118,6 @@ static bool eb_sub_exists(eb_t *bus, eb_evt_t *evt, eb_sub_cb_t *cb)
 
 static int32_t eb_subscribe(eb_t *bus, const char *name, bool direct, uint32_t event_id, void *arg, eb_sub_cb_t *cb)
 {
-    uint32_t i = 0;
     eb_evt_t *evt;
     eb_sub_t *sub;
 

@@ -49,5 +49,6 @@ int32_t eb_worker_init(eb_t *bus);
 int32_t eb_worker_exec(eb_t *bus, eb_sub_t *sub, uint32_t event_id, void *data, uint32_t len);
 int32_t eb_worker_post(eb_t *bus, eb_worker_t *worker, eb_msg_t *msg);
 eb_worker_t *eb_worker_get(uint32_t id);
+int32_t eb_worker_new(eb_t *bus, uint32_t id);
 
 #endif

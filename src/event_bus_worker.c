@@ -101,7 +101,7 @@ int32_t eb_worker_new(eb_t *bus, uint32_t id)
 
         worker->bus = bus;
         worker->id = id;
-        sprintf(worker->name, "wkr_%ld_th", worker->id);
+        sprintf(worker->name, "wkr_%d_th", worker->id);
 
         if(eb_queue_new(&worker->queue, sizeof(eb_msg_t), EB_WORKER_QUEUE_LEN)){
             eb_log_err("%s queue failed\n", worker->name);
