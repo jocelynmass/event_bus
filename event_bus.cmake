@@ -40,7 +40,11 @@ set(EB_INC ${EB_INC}
 )
 
 if(USE_FREERTOS)
-    set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/eb_freertos.c")
+    set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/freertos/eb_freertos.c")
+endif()
+
+if(WITH_ZEPHYR)
+set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/zephyr/eb_zephyr.c")
 endif()
 
 set(EB_SRC ${EB_SRC}

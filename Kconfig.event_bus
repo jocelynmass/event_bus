@@ -1,0 +1,11 @@
+config ZEPHYR_EVENT_BUS_MODULE
+	bool
+
+config EVENT_BUS
+	bool "Event Bus Support"
+	depends on ZEPHYR_EVENT_BUS_MODULE
+	help
+	  This option enables the Event Bus library
+
+if EVENT_BUS
+endif # EVENT_BUS

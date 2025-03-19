@@ -1,0 +1,4 @@
+name: event_bus
+build:
+  cmake: .
+  kconfig: Kconfig.event_bus

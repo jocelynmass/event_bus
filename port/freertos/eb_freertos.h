@@ -28,31 +28,22 @@
  * WITH THE SOFTWARE.
  */
 
-#ifndef __EB_PORT_H__
-#define __EB_PORT_H__
+ #ifndef __EB_FREERTOS_PORT_H__
+ #define __EB_FREERTOS_PORT_H__
 
-#ifdef USE_FREERTOS
-#include "freertos/eb_freertos.h"
-#elif USE_ZEPHYR
-#include "zephyr/eb_zephyr.h"
-#endif
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
+#include "semphr.h"
 
-int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length);
-int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout);
-int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout);
-int32_t eb_queue_msg_waiting(eb_queue_t *queue);
-int32_t eb_queue_delete(eb_queue_t *queue);
+#define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
+#define EB_PRIO                     (tskIDLE_PRIORITY + 2)
+#define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
+#define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
 
-int32_t eb_mutex_new(eb_mutex_t *mutex);
-int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout);
-int32_t eb_mutex_give(eb_mutex_t *mutex);
+typedef QueueHandle_t eb_queue_t;
+typedef SemaphoreHandle_t eb_mutex_t;
+typedef TaskHandle_t eb_thread_t;
 
-eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio);
-void eb_thread_delete(eb_thread_t thread);
-
-uint32_t eb_get_tick(void);
-
-void *eb_malloc(size_t len);
-void eb_free(void *pmem);
-
-#endif //__EB_PORT_H__
+#endif //__EB_FREERTOS_PORT_H__
