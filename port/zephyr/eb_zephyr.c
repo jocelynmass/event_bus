@@ -28,131 +28,125 @@
  * WITH THE SOFTWARE.
  */
 
- #include "eb_port.h"
- #include "event_bus.h"
+ #include "eb_zephyr.h"
+
+
+static uint8_t thread_idx = 0;
+static z_th_t eb_zephyr[CONFIG_EB_MAX_NB_THREADS];
+static struct k_thread thread_pool[CONFIG_EB_MAX_NB_THREADS]; 
+K_THREAD_STACK_ARRAY_DEFINE(stack_pool,	CONFIG_EB_MAX_NB_THREADS, CONFIG_EB_STACK_SIZE);
+K_HEAP_ARRAY_DEFINE(heaps, CONFIG_EB_MAX_NB_THREADS, 1024)
+
+static struct k_heap *eb_get_heap(void)
+{
+	k_tid_t tid = k_current_get();
+	uint8_t i;
+
+	for(i = 0 ; i < CONFIG_EB_MAX_NB_THREADS ; i++){
+		if(eb_zephyr[i].tid == tid){
+			return eb_zephyr[i].heap;
+		}
+	}
+
+	return NULL;
+}
+
+int32_t eb_mutex_new(eb_mutex_t *mutex)
+{
+	return k_mutex_init(mutex);
+}
  
- int32_t eb_mutex_new(eb_mutex_t *mutex)
- {
-    //  *mutex = xSemaphoreCreateMutex();
-        
-    //     if(*mutex == NULL)
-    //         return -1;
+int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout)
+{
+	return k_mutex_lock(mutex, K_MSEC(timeout));
+}
  
-     return 0;
- }
+int32_t eb_mutex_give(eb_mutex_t *mutex)
+{
+    k_mutex_unlock(mutex);
+    return 0;
+}
  
- int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout)
- {
+int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length)
+{
+	int32_t rc = 0;
+
+	rc = k_msgq_alloc_init(queue, item_size, length);
+
+	return rc;
+}
  
-    //  if(mcu_in_isr){
-    //      if(xSemaphoreTakeFromISR(*mutex, NULL) == pdTRUE){
-    //          return 0;
-    //      }
-    //  }else{
-    //      if(xSemaphoreTake(*mutex, timeout) == pdTRUE){
-    //             return 0;
-    //      }
-    //  }
-     
-     return -1;
- }
+int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout)
+{
+	if(k_msgq_put(queue, item, K_MSEC(timeout)) != 0){
+		return -1;
+	}
+    
+	return 0;
+}
  
- int32_t eb_mutex_give(eb_mutex_t *mutex)
- {
-        // xSemaphoreGive(*mutex);
- 
-     return 0;
- }
- 
- int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length)
- {
-    //  *queue = xQueueCreate(length, item_size);
-        
-    //     if(*queue == NULL)
-    //         return -1;
- 
-     return 0;
- }
- 
- int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32_t timeout)
- {
-    //  if(prio == EVENT_BUS_HIGH_PRIO){
-    //      if(mcu_in_isr){
-    //          if(xQueueSendToFront(*queue, item, timeout) == pdTRUE){
-    //              return 0;
-    //          }
-    //      }else{
-    //          if(xQueueSendToFrontFromISR(*queue, item, NULL) == pdTRUE){
-    //              return 0;
-    //          }
-    //      }
-    //  }else{
-    //      if(mcu_in_isr){
-    //          if(xQueueSendToBack(*queue, item, timeout) == pdTRUE){
-    //              return 0;
-    //          }
-    //      }else{
-    //          if(xQueueSendToBackFromISR(*queue, item, NULL) == pdTRUE){
-    //              return 0;
-    //          }
-    //      }
-    //  }
-     return -1;
- }
- 
- int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout)
- {
-    //  if(xQueueReceive(*queue, item, timeout) == pdPASS){
-    //      return 0;
-    //  }
-     return -1;
- }
+int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout)
+{
+    return k_msgq_get(queue, item, K_MSEC(timeout));
+}
  
  int32_t eb_queue_msg_waiting(eb_queue_t *queue)
  {
-    //  return uxQueueMessagesWaiting(*queue);
-    return 0;
+     return k_msgq_num_used_get(queue);
  }
  
  int32_t eb_queue_delete(eb_queue_t *queue)
  {
-    //  if(queue){
-    //      vQueueDelete(queue);
-    //  }
-     return 0;
- }
- 
- eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio)
- {
-    //  eb_thread_t ret;
- 
-    //  if(xTaskCreate(thread, name, stack_size, arg, prio, &ret) != pdPASS)
-    //  {
-    //      return NULL;
-    //  }
- 
-     return ret;
- }
- 
- void eb_thread_delete(eb_thread_t thread)
- {
-    // k_thread_abort(thread);
- }
- 
- uint32_t eb_get_tick(void)
- {
-    //  return xTaskGetTickCount();
+    k_msgq_cleanup(queue);
     return 0;
  }
  
- void *eb_malloc(size_t len)
- {
-    //  return pvPortMalloc(len);
-    return 0;
- }
+eb_thread_t eb_thread_new(const char *name, eb_thread_func *thread, void *arg, int stack_size, int prio)
+{
+	z_th_t *z = &eb_zephyr[thread_idx];
+
+	if(thread_idx >= CONFIG_EB_MAX_NB_THREADS){
+		return NULL;
+	}
+
+	z->idx = thread_idx++;
+	z->heap = heaps[z->idx];
+	z->tid = k_thread_create(&thread_pool[z->idx], stack_pool[z->idx], CONFIG_EB_STACK_SIZE,
+									thread, arg, NULL, NULL, prio, 0, K_NO_WAIT);
+	
+	k_thread_heap_assign(&thread_pool[z->idx], z->heap);
+	k_thread_name_set(z->tid, name);
+   	return z;
+}
  
- void eb_free(void *pmem)
- {
-    //  vPortFree(pmem);
-    return 0;
- }
+void eb_thread_delete(eb_thread_t thread)
+{
+	k_thread_abort(thread->tid);
+}
+ 
+uint32_t eb_get_tick(void)
+{
+	return k_uptime_get();
+}
+ 
+void *eb_malloc(size_t len)
+{
+	struct k_heap *h = eb_get_heap();
+
+	if(h == NULL){
+		return NULL;
+	}
+
+	return k_heap_alloc(h, len, K_NO_WAIT);
+}
+ 
+void eb_free(void *pmem)
+{
+	struct k_heap *h = eb_get_heap();
+
+	if(h == NULL){
+		return;
+	}
+
+	k_heap_free(h, pmem);
+}

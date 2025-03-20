@@ -34,7 +34,11 @@
 
 static eb_worker_t workers[MAX_NB_WORKERS];
 
+#ifdef WITH_ZEPHYR
+static void eb_worker_thread(void *arg, void *arg2, void *arg3)
+#else
 static void eb_worker_thread(void *arg)
+#endif
 {
     eb_worker_t *worker = (eb_worker_t *)arg;
     eb_t *bus = worker->bus;

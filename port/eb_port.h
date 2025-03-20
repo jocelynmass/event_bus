@@ -31,10 +31,16 @@
 #ifndef __EB_PORT_H__
 #define __EB_PORT_H__
 
+#include <stddef.h>
+#include <stdint.h>
+#include "event_bus.h"
+
 #ifdef USE_FREERTOS
 #include "freertos/eb_freertos.h"
-#elif USE_ZEPHYR
+#elif WITH_ZEPHYR
 #include "zephyr/eb_zephyr.h"
+#else
+#error "missing event bus port definition"
 #endif
 
 int32_t eb_queue_new(eb_queue_t *queue, uint32_t item_size, uint32_t length);
@@ -47,7 +53,7 @@ int32_t eb_mutex_new(eb_mutex_t *mutex);
 int32_t eb_mutex_take(eb_mutex_t *mutex, uint32_t timeout);
 int32_t eb_mutex_give(eb_mutex_t *mutex);
 
-eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio);
+eb_thread_t eb_thread_new(const char *name, eb_thread_func *thread, void *arg, int stack_size, int prio);
 void eb_thread_delete(eb_thread_t thread);
 
 uint32_t eb_get_tick(void);

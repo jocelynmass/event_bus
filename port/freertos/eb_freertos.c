@@ -102,6 +102,8 @@ int32_t eb_queue_push(eb_queue_t *queue, const void *item, uint32_t prio, uint32
 
 int32_t eb_queue_get(eb_queue_t *queue, void *item, uint32_t timeout)
 {
+    (void)len;
+    
     if(xQueueReceive(*queue, item, timeout) == pdPASS){
         return 0;
     }
@@ -121,7 +123,7 @@ int32_t eb_queue_delete(eb_queue_t *queue)
     return 0;
 }
 
-eb_thread_t eb_thread_new(const char *name, void (*thread)(void *arg), void *arg, int stack_size, int prio)
+eb_thread_t eb_thread_new(const char *name, eb_thread_func *thread, void *arg, int stack_size, int prio)
 {
 	eb_thread_t ret;
 

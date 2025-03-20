@@ -28,26 +28,33 @@
  * WITH THE SOFTWARE.
  */
 
- #ifndef __EB_ZEPHYR_PORT_H__
- #define __EB_ZEPHYR_PORT_H__
+#ifndef __EB_ZEPHYR_PORT_H__
+#define __EB_ZEPHYR_PORT_H__
 
-// #include "FreeRTOS.h"
-// #include "task.h"
-// #include "queue.h"
-// #include "timers.h"
-// #include "semphr.h"
+#include <zephyr/kernel.h>
 
-// #define EB_STACK_SIZE               (configMINIMAL_STACK_SIZE * 4)
-// #define EB_PRIO                     (tskIDLE_PRIORITY + 2)
-// #define EB_WORKER_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)
-// #define EB_WORKER_PRIO              (tskIDLE_PRIORITY + 1)
+#define K_HEAP_EXPAND(idx, array, k_heap_len) \
+    K_HEAP_DEFINE(array##_##idx, k_heap_len);
 
-// typedef QueueHandle_t eb_queue_t;
-// typedef SemaphoreHandle_t eb_mutex_t;
-// typedef TaskHandle_t eb_thread_t;
+#define K_HEAP_PTR_EXPAND(idx, array) \
+    &array##_##idx,
 
-typedef void * eb_queue_t;
-typedef void * eb_mutex_t;
-typedef void * eb_thread_t;
+#define K_HEAP_ARRAY_DEFINE(array, nb_k_heap, k_heap_len) \
+    LISTIFY(nb_k_heap, K_HEAP_EXPAND, (), array, k_heap_len) \
+    struct k_heap *array[nb_k_heap] = { LISTIFY(nb_k_heap, K_HEAP_PTR_EXPAND, (), array) };
+
+
+typedef struct z_th_t
+{
+    uint8_t idx;
+    k_tid_t tid;
+    struct k_heap *heap; 
+}z_th_t;
+
+typedef struct k_msgq eb_queue_t;
+typedef struct k_mutex eb_mutex_t;
+typedef z_th_t* eb_thread_t;
+
+typedef void (eb_thread_func)(void *arg1, void *arg2, void *arg3);
 
 #endif //__EB_ZEPHYR_PORT_H__

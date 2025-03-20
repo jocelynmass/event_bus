@@ -27,39 +27,28 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # WITH THE SOFTWARE.
 
-add_library(event-bus INTERFACE)
+if(CONFIG_EVENT_BUS)
 
-target_compile_definitions(event-bus
-        INTERFACE
-            LIB_EVENT_BUS=1
+set(EVENT_BUS_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+
+zephyr_interface_library_named(EVENT_BUS)
+zephyr_library()
+
+zephyr_include_directories(
+    ${EVENT_BUS_DIR}/includes
+    ${EVENT_BUS_DIR}/port)
+
+zephyr_compile_definitions(WITH_ZEPHYR=1)
+
+zephyr_library_sources(
+    ${EVENT_BUS_DIR}/port/zephyr/eb_zephyr.c
+    ${EVENT_BUS_DIR}/src/event_bus.c
+    ${EVENT_BUS_DIR}/src/event_bus_worker.c
+    ${EVENT_BUS_DIR}/src/eb_dispatcher.c
+    ${EVENT_BUS_DIR}/src/event_bus_stats.c
 )
 
-set(EB_INC ${EB_INC} 
-    "${CMAKE_CURRENT_LIST_DIR}/includes"
-    "${CMAKE_CURRENT_LIST_DIR}/port"
-)
+zephyr_library_link_libraries(EVENT_BUS)
+target_link_libraries(EVENT_BUS INTERFACE zephyr_interface)
 
-if(USE_FREERTOS)
-    set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/freertos/eb_freertos.c")
-endif()
-
-if(WITH_ZEPHYR)
-set(EB_SRC ${EB_SRC} "${CMAKE_CURRENT_LIST_DIR}/port/zephyr/eb_zephyr.c")
-endif()
-
-set(EB_SRC ${EB_SRC}
-    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_worker.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/eb_dispatcher.c"
-    "${CMAKE_CURRENT_LIST_DIR}/src/event_bus_stats.c"
-)
-
-target_include_directories(event-bus
-    INTERFACE
-        ${EB_INC}
-)
-
-target_sources(event-bus
-    INTERFACE
-        ${EB_SRC}
-)
+endif(CONFIG_EVENT_BUS)

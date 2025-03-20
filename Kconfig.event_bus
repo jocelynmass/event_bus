@@ -8,4 +8,36 @@ config EVENT_BUS
 	  This option enables the Event Bus library
 
 if EVENT_BUS
+    config EB_MAX_NB_EVENTS
+		int "Maximum number of event"
+		default 16
+
+    config EB_MAX_NB_SUBSCRIBERS
+		int "Maximum number of subscribers per event"
+		default 16
+    
+    config EB_MAX_NB_THREADS
+		int "Maximum number of threads used by event bus"
+		default 4
+    
+    config EB_MAX_SIMLT_EVT
+		int "Maximum number of simultaneous events"
+		default 8
+
+    config EB_STACK_SIZE
+		int "Event bus stack size"
+		default 2048
+    
+    config EB_PRIO
+		int "Event bus thread priority"
+		default 10
+
+    config EB_WORKER_STACK_SIZE
+		int "Event bus worker stack size"
+		default 500
+    
+    config EB_WORKER_PRIO
+		int "Event bus worker thread priority"
+		default 9
+
 endif # EVENT_BUS

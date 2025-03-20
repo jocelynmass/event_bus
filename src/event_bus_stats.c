@@ -83,15 +83,15 @@ void eb_stats_print(void)
 
 	printf("----> event bus stats:\n");
     printf("\t - version = %d.%d.%d\n", EVENT_BUS_MAJOR_REV, EVENT_BUS_MINOR_REV, EVENT_BUS_PATCH);
-    printf("\t - nb event fired = %ld\n", stat_total_evt);
-    printf("\t - latency min = %ld ms\n", stats.lat_min);
-    printf("\t - latency max = %ld ms\n", stats.lat_max);
-	printf("\t - average latency = %ld ms\n", stats.lat_avg);
+    printf("\t - nb event fired = %d\n", stat_total_evt);
+    printf("\t - latency min = %d ms\n", stats.lat_min);
+    printf("\t - latency max = %d ms\n", stats.lat_max);
+	printf("\t - average latency = %d ms\n", stats.lat_avg);
     printf("\t - max latency subscriber = %s\n", stats.lat_max_name);
     printf("\t - last events stats:\n");
 
     for(i = 0 ; i < EB_STAT_HIST_DEPTH ; i++)
     {
-        printf("\t\t > subscriber: %s - event id = 0x%.8lx - latency = %ld ms\n", stat_hist[i].name, stat_hist[i].event_id, stat_hist[i].lat);
+        printf("\t\t > subscriber: %s - event id = 0x%.8x - latency = %d ms\n", stat_hist[i].name, stat_hist[i].event_id, stat_hist[i].lat);
     }
 }

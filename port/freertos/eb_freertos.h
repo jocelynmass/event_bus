@@ -46,4 +46,6 @@ typedef QueueHandle_t eb_queue_t;
 typedef SemaphoreHandle_t eb_mutex_t;
 typedef TaskHandle_t eb_thread_t;
 
+typedef void (eb_thread_func)(void *arg);
+
 #endif //__EB_FREERTOS_PORT_H__
