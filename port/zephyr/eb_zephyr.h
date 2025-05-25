@@ -48,7 +48,6 @@ typedef struct z_th_t
 {
     uint8_t idx;
     k_tid_t tid;
-    struct k_heap *heap; 
 }z_th_t;
 
 typedef struct k_msgq eb_queue_t;

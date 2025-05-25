@@ -28,28 +28,12 @@
  * WITH THE SOFTWARE.
  */
 
- #include "eb_zephyr.h"
-
+#include "eb_zephyr.h"
 
 static uint8_t thread_idx = 0;
 static z_th_t eb_zephyr[CONFIG_EB_MAX_NB_THREADS];
 static struct k_thread thread_pool[CONFIG_EB_MAX_NB_THREADS]; 
 K_THREAD_STACK_ARRAY_DEFINE(stack_pool,	CONFIG_EB_MAX_NB_THREADS, CONFIG_EB_STACK_SIZE);
-K_HEAP_ARRAY_DEFINE(heaps, CONFIG_EB_MAX_NB_THREADS, 1024)
-
-static struct k_heap *eb_get_heap(void)
-{
-	k_tid_t tid = k_current_get();
-	uint8_t i;
-
-	for(i = 0 ; i < CONFIG_EB_MAX_NB_THREADS ; i++){
-		if(eb_zephyr[i].tid == tid){
-			return eb_zephyr[i].heap;
-		}
-	}
-
-	return NULL;
-}
 
 int32_t eb_mutex_new(eb_mutex_t *mutex)
 {
@@ -110,12 +94,9 @@ eb_thread_t eb_thread_new(const char *name, eb_thread_func *thread, void *arg, i
 	}
 
 	z->idx = thread_idx++;
-	z->heap = heaps[z->idx];
 	z->tid = k_thread_create(&thread_pool[z->idx], stack_pool[z->idx], CONFIG_EB_STACK_SIZE,
 									thread, arg, NULL, NULL, prio, 0, K_NO_WAIT);
 	
-	k_thread_heap_assign(&thread_pool[z->idx], z->heap);
-	k_thread_name_set(z->tid, name);
    	return z;
 }
  
@@ -131,22 +112,10 @@ uint32_t eb_get_tick(void)
  
 void *eb_malloc(size_t len)
 {
-	struct k_heap *h = eb_get_heap();
-
-	if(h == NULL){
-		return NULL;
-	}
-
-	return k_heap_alloc(h, len, K_NO_WAIT);
+	return k_malloc(len);
 }
  
 void eb_free(void *pmem)
 {
-	struct k_heap *h = eb_get_heap();
-
-	if(h == NULL){
-		return;
-	}
-
-	k_heap_free(h, pmem);
+	k_free(pmem);
 }
