@@ -100,7 +100,7 @@ int32_t eb_dispatch(eb_t *bus, eb_msg_t *msg, bool indirect)
 
 err:
     // if msg is retain, the worker is then responsible for its destruction
-    if((msg->data) && (msg->retain == 0)){
+    if((msg->data) && (msg->retain == 0) && (msg->retain != EVENT_BUS_MEM_STATIC)){
         eb_free(msg->data);
     }
 

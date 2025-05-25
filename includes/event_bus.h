@@ -47,6 +47,8 @@
 #define EVENT_BUS_LOW_PRIO      0
 #define EVENT_BUS_HIGH_PRIO     1
 
+#define EVENT_BUS_MEM_STATIC    255
+
 typedef int32_t (eb_sub_cb_t)(void *app_ctx, uint32_t event_id, void *data, uint32_t len, void *arg);
 
 

@@ -51,36 +51,6 @@ static int32_t eb_unlock(eb_t *bus)
 
     return 0;
 }
-#ifdef WITH_ZEPHYR
-static void eb_thread(void *arg, void *arg2, void *arg3)
-#else
-static void eb_thread(void *arg)
-#endif
-{
-    eb_t *bus = (eb_t *)arg;
-    eb_msg_t msg;
-    int32_t rc = EVT_BUS_ERR_OK;
-    bool indirect = false;
-
-    if(eb_queue_new(&bus->queue, sizeof(eb_msg_t), EB_QUEUE_LEN)){
-        eb_log_err("main queue failed\n");
-        return;
-    }
-
-    while(1){
-        if(eb_queue_get(&bus->queue, &msg, EB_QUEUE_PERIOD) == 0){
-            msg.retain = 0;
-            msg.evt = eb_get_event(bus, msg.evt_id);
-            indirect = eb_has_indirect_sub(bus, msg.evt);
-            rc = eb_dispatch(bus, &msg, indirect);
-
-            if(rc){
-                eb_log_warn("dispatch error(%d) for msg id = %x\n", rc, msg.evt_id);
-            }
-        }
-    }
-    
-}
 
 static eb_evt_t *eb_get_event(eb_t *bus, uint32_t event_id)
 {
@@ -253,34 +223,36 @@ int32_t eb_pub(eb_t *bus, uint32_t event_id, void *data, uint32_t len, uint32_t 
 {
     eb_msg_t msg;
     int rc = EVT_BUS_ERR_OK;
+    bool indirect = false;
 
     if(eb_lock(bus)){
         return EVT_BUS_LOCK_ERR;
     }
     
     msg.evt_id = event_id;
-    msg.evt = NULL;
     msg.len = len;
     msg.data = NULL;
+    msg.retain = 0;
+    
+    msg.evt = eb_get_event(bus, msg.evt_id);
+    indirect = eb_has_indirect_sub(bus, msg.evt);
 
-    if(msg.len > 0){
-        msg.data = eb_malloc(len); //TODO: replace by a mempool alloc
-        if(msg.data == NULL){
-            eb_log_err("data alloc failed for event id 0x%x\n", event_id);
-            rc = EVT_BUS_ALLOC_ERR;
-            goto exit;
+    if(indirect){
+        if(msg.len > 0){
+            msg.data = eb_malloc(len);
+            if(msg.data == NULL){
+                eb_log_err("data alloc failed for event id 0x%x\n", event_id);
+                rc = EVT_BUS_ALLOC_ERR;
+                goto exit;
+            }
+            memcpy(msg.data, data, len);
         }
-        memcpy(msg.data, data, len);
+    }else{
+        msg.retain = EVENT_BUS_MEM_STATIC;
+        msg.data = data;
     }
-
-    if(eb_queue_push(&bus->queue, (void *)&msg, prio, EB_PUBLISH_TIMEOUT)){
-        if(msg.data){
-            eb_free(msg.data);
-        }
-        eb_log_err("failed to publish event id 0x%x\n", event_id);
-        rc = EVT_BUS_PUB_ERR;
-        goto exit;
-    }
+    
+    eb_dispatch(bus, &msg, indirect);
 
 exit:
     eb_unlock(bus);
@@ -298,10 +270,6 @@ int32_t eb_init(eb_t *bus, void *app_ctx)
 
     memset(bus->events, 0, sizeof(eb_evt_t) *  MAX_NB_EVENTS);
     memset(&bus->all_sub, 0, sizeof(eb_sub_t));
-
-    if(eb_thread_new("eb_th", eb_thread, (void *)bus, EB_STACK_SIZE, EB_PRIO) == NULL){
-        return EVT_BUS_THREAD_ERR;
-    }
 
     if(eb_worker_init(bus)){
         return EVT_WORKER_ERR;
