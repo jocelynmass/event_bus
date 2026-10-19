@@ -106,6 +106,7 @@ static int32_t eb_subscribe(eb_t *bus, const char *name, bool direct, uint32_t e
     evt = eb_get_add_event(bus, event_id);
 
     if(evt == NULL){
+        eb_unlock(bus);
         return EVT_BUS_MEM_ERR;
     }
 
